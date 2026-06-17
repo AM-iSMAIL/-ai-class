@@ -15,7 +15,7 @@ import {
   Send,
   X,
 } from 'lucide-react';
-import { db } from '../firebase';
+import { db, toggleForceLocalMode, runWithTimeout } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 
 export default function TeacherSetup({ onNext, onClassData }) {
@@ -27,6 +27,8 @@ export default function TeacherSetup({ onNext, onClassData }) {
   const [copied, setCopied] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleTopicChange = (index, value) => {
     setTopics((prev) => {
@@ -46,6 +48,8 @@ export default function TeacherSetup({ onNext, onClassData }) {
   };
 
   const handleCreate = async () => {
+    setLoading(true);
+    setError('');
     const code = generateCode();
     setSessionCode(code);
 
@@ -57,18 +61,32 @@ export default function TeacherSetup({ onNext, onClassData }) {
     };
 
     if (db) {
-      setDoc(doc(db, "sessions", code), {
-        ...sessionData,
-        status: 'waiting',
-        currentTopicIndex: 0,
-        createdAt: new Date()
-      }).catch((err) => {
+      try {
+        await runWithTimeout(
+          setDoc(doc(db, "sessions", code), {
+            ...sessionData,
+            status: 'waiting',
+            currentTopicIndex: 0,
+            createdAt: new Date()
+          })
+        );
+        onClassData(sessionData);
+        setSessionCreated(true);
+      } catch (err) {
         console.error("Firestore session creation failed:", err);
-      });
+        let errorMsg = err.message || String(err);
+        if (errorMsg.includes("permission-denied") || errorMsg.includes("PERMISSION_DENIED") || errorMsg.includes("Cloud Firestore API")) {
+          errorMsg = "Cloud Firestore API has not been enabled for Firebase project 'future-studies-f1753', or security rules block this write. Please enable the API and setup the database, or switch to Local Sandbox mode.";
+        }
+        setError(errorMsg);
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      onClassData(sessionData);
+      setSessionCreated(true);
+      setLoading(false);
     }
-
-    onClassData(sessionData);
-    setSessionCreated(true);
   };
 
   const handleCopy = () => {
@@ -122,26 +140,26 @@ export default function TeacherSetup({ onNext, onClassData }) {
                 <Check size={30} className="text-cyber-green" />
               </div>
               <h1
-                className="text-3xl sm:text-4xl font-bold text-white mb-2 tracking-tight"
+                className="text-3xl sm:text-4xl font-bold text-slate-800 mb-2 tracking-tight"
                 style={{ fontFamily: 'var(--font-display)' }}
               >
                 Session{' '}
-                <span className="bg-gradient-to-r from-cyber-green to-accent-400 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-cyber-green to-accent-500 bg-clip-text text-transparent">
                   Created!
                 </span>
               </h1>
-              <p className="text-slate-400">
+              <p className="text-slate-500">
                 Share the code below with your students
               </p>
             </div>
 
             {/* Session Code Card */}
             <div className="glass p-8 text-center mb-6 animate-slide-up gradient-border">
-              <p className="text-xs font-semibold text-accent-400 uppercase tracking-widest mb-4">
+              <p className="text-xs font-semibold text-accent-600 uppercase tracking-widest mb-4">
                 Session Code
               </p>
               <div
-                className="text-5xl sm:text-6xl font-bold tracking-[0.35em] text-white mb-5 glow-text"
+                className="text-5xl sm:text-6xl font-bold tracking-[0.35em] text-accent-600 mb-5 glow-text"
                 style={{ fontFamily: 'var(--font-mono)' }}
               >
                 {sessionCode}
@@ -149,7 +167,7 @@ export default function TeacherSetup({ onNext, onClassData }) {
               <button
                 type="button"
                 onClick={handleCopy}
-                className="btn-secondary inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer border-none bg-accent-500/15 text-accent-300 hover:bg-accent-500/25"
+                className="btn-secondary inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer border-none bg-accent-500/10 text-accent-600 hover:bg-accent-500/20"
               >
                 {copied ? (
                   <>
@@ -166,27 +184,27 @@ export default function TeacherSetup({ onNext, onClassData }) {
             </div>
 
             {/* Session Summary */}
-            <div className="glass-light p-5 mb-6 animate-slide-up">
-              <div className="flex items-center gap-2 text-sm font-semibold text-white mb-3">
-                <Sparkles size={14} className="text-accent-400" />
+            <div className="glass-light p-5 mb-6 animate-slide-up border border-slate-200/80">
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-800 mb-3">
+                <Sparkles size={14} className="text-accent-500" />
                 Session Details
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Title</span>
-                  <span className="text-white font-medium">{title}</span>
+                  <span className="text-slate-500">Title</span>
+                  <span className="text-slate-800 font-medium">{title}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Topics</span>
-                  <span className="text-white font-medium">6 topics</span>
+                  <span className="text-slate-500">Topics</span>
+                  <span className="text-slate-800 font-medium">6 topics</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Duration per topic</span>
-                  <span className="text-white font-medium">{duration} min</span>
+                  <span className="text-slate-500">Duration per topic</span>
+                  <span className="text-slate-800 font-medium">{duration} min</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Total duration</span>
-                  <span className="text-accent-400 font-bold">{duration * 6} min</span>
+                  <span className="text-slate-500">Total duration</span>
+                  <span className="text-accent-600 font-bold">{duration * 6} min</span>
                 </div>
               </div>
             </div>
@@ -196,7 +214,7 @@ export default function TeacherSetup({ onNext, onClassData }) {
               <button
                 type="button"
                 onClick={onNext}
-                className="btn-primary w-full flex items-center justify-center gap-2 text-base"
+                className="btn-primary w-full flex items-center justify-center gap-2 text-base cursor-pointer"
               >
                 <Eye size={18} />
                 View as Teacher
@@ -206,12 +224,12 @@ export default function TeacherSetup({ onNext, onClassData }) {
               <button
                 type="button"
                 onClick={handleShareClick}
-                className="btn-secondary w-full flex items-center justify-center gap-2.5 text-base"
+                className="btn-secondary w-full flex items-center justify-center gap-2.5 text-base cursor-pointer"
               >
                 <Share2 size={17} />
                 <span>
                   Share Join Link:{' '}
-                  <span className="font-mono font-bold text-accent-300 tracking-wider">
+                  <span className="font-mono font-bold text-accent-600 tracking-wider">
                     {sessionCode}
                   </span>
                 </span>
@@ -222,21 +240,21 @@ export default function TeacherSetup({ onNext, onClassData }) {
 
         {/* Share Modal Dialog overlay */}
         {showShareModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/80 backdrop-blur-md animate-fade-in px-4">
-            <div className="glass p-6 max-w-sm w-full relative z-10 animate-slide-up border border-white/10 shadow-2xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-md animate-fade-in px-4">
+            <div className="glass p-6 max-w-sm w-full relative z-10 animate-slide-up border border-slate-200/80 shadow-2xl">
               <button
                 type="button"
                 onClick={() => setShowShareModal(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-none cursor-pointer transition-all duration-200"
+                className="absolute top-4 right-4 p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-550 hover:text-slate-800 border-none cursor-pointer transition-all duration-200"
               >
                 <X size={15} />
               </button>
 
-              <h2 className="text-xl font-bold text-white mb-1.5 font-display flex items-center gap-2">
-                <Share2 size={18} className="text-accent-400" />
+              <h2 className="text-xl font-bold text-slate-850 mb-1.5 font-display flex items-center gap-2">
+                <Share2 size={18} className="text-accent-500" />
                 Invite Students
               </h2>
-              <p className="text-slate-400 text-xs leading-relaxed mb-6">
+              <p className="text-slate-550 text-xs leading-relaxed mb-6">
                 Select an option below to share the interactive session link with your class.
               </p>
 
@@ -245,27 +263,27 @@ export default function TeacherSetup({ onNext, onClassData }) {
                   href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Join my live class "${title}"!\nCode: ${sessionCode}\nLink: ${window.location.origin}${window.location.pathname}?session=${sessionCode}`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-cyber-green/30 hover:bg-cyber-green/5 text-white cursor-pointer no-underline flex"
+                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-cyber-green/30 hover:bg-cyber-green/5 text-slate-700 hover:text-slate-800 cursor-pointer no-underline"
                 >
                   <div className="w-8 h-8 rounded-lg bg-cyber-green/10 flex items-center justify-center text-cyber-green shrink-0">
                     <MessageSquare size={16} className="fill-cyber-green/10" />
                   </div>
                   <div>
                     <span className="text-sm font-semibold block">Share on WhatsApp</span>
-                    <span className="text-[10px] text-slate-400">Send directly to your student groups</span>
+                    <span className="text-[10px] text-slate-500">Send directly to your student groups</span>
                   </div>
                 </a>
 
                 <a
                   href={`mailto:?subject=${encodeURIComponent(`Join ClassAI Session: ${title}`)}&body=${encodeURIComponent(`Join my live class "${title}"!\n\nSession Code: ${sessionCode}\nLink: ${window.location.origin}${window.location.pathname}?session=${sessionCode}`)}`}
-                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-accent-500/30 hover:bg-accent-500/5 text-white cursor-pointer no-underline flex"
+                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-accent-500/30 hover:bg-accent-500/5 text-slate-700 hover:text-slate-800 cursor-pointer no-underline"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-accent-500/10 flex items-center justify-center text-accent-400 shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-accent-500/10 flex items-center justify-center text-accent-500 shrink-0">
                     <Mail size={16} />
                   </div>
                   <div>
                     <span className="text-sm font-semibold block">Email Invitation</span>
-                    <span className="text-[10px] text-slate-400">Share via Gmail, Outlook, or mail client</span>
+                    <span className="text-[10px] text-slate-500">Share via Gmail, Outlook, or mail client</span>
                   </div>
                 </a>
 
@@ -273,30 +291,30 @@ export default function TeacherSetup({ onNext, onClassData }) {
                   href={`https://t.me/share/url?url=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?session=${sessionCode}`)}&text=${encodeURIComponent(`Join my live class session "${title}"! (Code: ${sessionCode})`)}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-cyber-purple/30 hover:bg-cyber-purple/5 text-white cursor-pointer no-underline flex"
+                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-cyber-purple/30 hover:bg-cyber-purple/5 text-slate-700 hover:text-slate-800 cursor-pointer no-underline"
                 >
                   <div className="w-8 h-8 rounded-lg bg-cyber-purple/10 flex items-center justify-center text-cyber-purple shrink-0">
                     <Send size={16} />
                   </div>
                   <div>
                     <span className="text-sm font-semibold block">Share on Telegram</span>
-                    <span className="text-[10px] text-slate-400">Send to channels or classroom chats</span>
+                    <span className="text-[10px] text-slate-500">Send to channels or classroom chats</span>
                   </div>
                 </a>
 
                 <button
                   type="button"
                   onClick={handleCopyLink}
-                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-white/10 hover:bg-white/5 text-white cursor-pointer flex"
+                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-slate-200 hover:bg-slate-50 text-slate-700 cursor-pointer flex"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-300 shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-650 shrink-0">
                     {copiedLink ? <Check size={16} className="text-cyber-green" /> : <Copy size={16} />}
                   </div>
                   <div>
                     <span className="text-sm font-semibold block">
                       {copiedLink ? 'Copied!' : 'Copy Session Link'}
                     </span>
-                    <span className="text-[10px] text-slate-400">Copy URL with embedded room code</span>
+                    <span className="text-[10px] text-slate-500">Copy URL with embedded room code</span>
                   </div>
                 </button>
               </div>
@@ -317,26 +335,26 @@ export default function TeacherSetup({ onNext, onClassData }) {
       <div className="w-full max-w-lg relative z-10 stagger">
         {/* Header */}
         <div className="text-center mb-10 animate-slide-up">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-400 text-xs font-medium mb-5">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-600 text-xs font-medium mb-5">
             <Sparkles size={14} />
             <span>AI-Powered Classroom</span>
           </div>
           <h1
-            className="text-4xl sm:text-5xl font-bold text-white mb-3 tracking-tight"
+            className="text-4xl sm:text-5xl font-bold text-slate-800 mb-3 tracking-tight"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Create Your{' '}
-            <span className="bg-gradient-to-r from-accent-400 via-cyber-purple to-cyber-pink bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-accent-600 via-cyber-purple to-cyber-pink bg-clip-text text-transparent">
               Session
             </span>
           </h1>
-          <p className="text-slate-400 text-base">
+          <p className="text-slate-600 text-base">
             Set up your topics and invite students to join
           </p>
         </div>
 
         {/* Form Card */}
-        <div className="glass p-6 sm:p-8 animate-slide-up">
+        <div className="glass p-6 sm:p-8 animate-slide-up border border-slate-200/80 shadow-xl">
           <div className="space-y-6">
             {/* Quick Demo Preload */}
             <div className="flex justify-end">
@@ -353,17 +371,17 @@ export default function TeacherSetup({ onNext, onClassData }) {
                     "Model Evaluation"
                   ]);
                 }}
-                className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-accent-500/10 border border-accent-500/25 hover:bg-accent-500/20 text-accent-300 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
+                className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-accent-500/10 border border-accent-500/20 hover:bg-accent-500/15 text-accent-600 transition-all duration-200 cursor-pointer flex items-center gap-1.5"
               >
-                <Sparkles size={13} className="text-accent-400" />
+                <Sparkles size={13} className="text-accent-500" />
                 Load Demo
               </button>
             </div>
 
             {/* Session Title */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2 font-display">
-                <GraduationCap size={15} className="text-accent-400" />
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2 font-display">
+                <GraduationCap size={15} className="text-accent-500" />
                 Session Title
               </label>
               <input
@@ -378,14 +396,14 @@ export default function TeacherSetup({ onNext, onClassData }) {
 
             {/* 6 Topic Inputs */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-3 font-display">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-3 font-display">
                 <BookOpen size={15} className="text-cyber-purple" />
                 Topics (6 required)
               </label>
               <div className="space-y-2.5">
                 {topics.map((topic, idx) => (
                   <div key={idx} className="flex items-center gap-2.5">
-                    <span className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold bg-navy-800 border border-white/5 text-slate-400 shrink-0 select-none">
+                    <span className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold bg-navy-800 border border-slate-200 text-slate-500 shrink-0 select-none">
                       {idx + 1}
                     </span>
                     <input
@@ -402,7 +420,7 @@ export default function TeacherSetup({ onNext, onClassData }) {
 
             {/* Duration per topic */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
                 <Clock size={14} className="text-cyber-green" />
                 Duration per Topic (minutes)
               </label>
@@ -413,51 +431,84 @@ export default function TeacherSetup({ onNext, onClassData }) {
                   max="30"
                   value={duration}
                   onChange={(e) => setDuration(parseInt(e.target.value))}
-                  className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-navy-700
+                  className="flex-1 h-1.5 rounded-full appearance-none cursor-pointer bg-accent-200
                     [&::-webkit-slider-thumb]:appearance-none
                     [&::-webkit-slider-thumb]:w-5
                     [&::-webkit-slider-thumb]:h-5
                     [&::-webkit-slider-thumb]:rounded-full
                     [&::-webkit-slider-thumb]:bg-accent-500
-                    [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(59,118,255,0.5)]
+                    [&::-webkit-slider-thumb]:shadow-[0_0_10px_rgba(59,118,255,0.3)]
                     [&::-webkit-slider-thumb]:cursor-pointer
                   "
                 />
-                <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-navy-700 min-w-[72px] justify-center">
-                  <span className="text-white font-bold font-mono text-sm">
+                <div className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-accent-50 border border-accent-100 min-w-[72px] justify-center">
+                  <span className="text-slate-800 font-bold font-mono text-sm">
                     {duration}
                   </span>
-                  <span className="text-slate-500 text-xs">min</span>
+                  <span className="text-slate-600 text-xs">min</span>
                 </div>
               </div>
-              <p className="text-xs text-slate-500 mt-2">
+              <p className="text-xs text-slate-600 mt-2">
                 Total session time:{' '}
-                <span className="text-accent-400 font-semibold">
+                <span className="text-accent-600 font-semibold">
                   {duration * 6} minutes
                 </span>
               </p>
             </div>
+            {/* Error Message */}
+            {error && (
+              <div className="flex flex-col gap-3 text-error text-sm bg-error/10 px-4 py-3.5 rounded-lg border border-error/20 text-left">
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5 text-base">⚠</span>
+                  <span className="leading-relaxed">{error}</span>
+                </div>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  <a
+                    href="https://console.developers.google.com/apis/api/firestore.googleapis.com/overview?project=future-studies-f1753"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded bg-error/20 hover:bg-error/30 text-white text-xs font-semibold no-underline inline-block border border-error/30"
+                  >
+                    Enable API on GCP
+                  </a>
+                  <a
+                    href="https://console.firebase.google.com/project/future-studies-f1753/firestore"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded bg-error/20 hover:bg-error/30 text-white text-xs font-semibold no-underline inline-block border border-error/30"
+                  >
+                    Set Up DB on Firebase
+                  </a>
+                  <button
+                    type="button"
+                    onClick={toggleForceLocalMode}
+                    className="px-2.5 py-1 rounded bg-warning/20 hover:bg-warning/30 text-warning text-xs font-bold border border-warning/30 cursor-pointer"
+                  >
+                    Switch to Local Sandbox Mode
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Submit */}
           <button
             type="button"
             onClick={handleCreate}
-            disabled={!isValid}
+            disabled={!isValid || loading}
             className={`
               btn-primary w-full mt-8 flex items-center justify-center gap-2
-              text-base
-              ${!isValid ? 'opacity-40 cursor-not-allowed !transform-none' : ''}
+              text-base cursor-pointer
+              ${!isValid || loading ? 'opacity-40 cursor-not-allowed !transform-none' : ''}
             `}
           >
             <Zap size={18} />
-            Create Session
-            <ChevronRight size={18} />
+            <span>{loading ? 'Creating...' : 'Create Session'}</span>
           </button>
 
           {/* Validation hint */}
           {!isValid && (title.length > 0 || topics.some((t) => t.length > 0)) && (
-            <p className="text-xs text-slate-500 text-center mt-3">
+            <p className="text-xs text-slate-600 text-center mt-3">
               Fill in the session title and all 6 topics to continue
             </p>
           )}

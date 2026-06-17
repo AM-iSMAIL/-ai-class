@@ -11,7 +11,7 @@ import {
   Lock,
   AlertTriangle,
 } from 'lucide-react';
-import { db } from '../firebase';
+import { db, toggleForceLocalMode, runWithTimeout } from '../firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function StudentJoin({
@@ -55,7 +55,9 @@ export default function StudentJoin({
     if (db) {
       try {
         setError('');
-        const sessionDoc = await getDoc(doc(db, "sessions", sessionCodeUpper));
+        const sessionDoc = await runWithTimeout(
+          getDoc(doc(db, "sessions", sessionCodeUpper))
+        );
         if (!sessionDoc.exists()) {
           setError('Session not found. Please double check the code.');
           return;
@@ -79,14 +81,22 @@ export default function StudentJoin({
         };
 
         // Write student to Firestore under this session
-        await setDoc(doc(db, "sessions", sessionCodeUpper, "students", studentId.trim()), studentData);
+        await runWithTimeout(
+          setDoc(doc(db, "sessions", sessionCodeUpper, "students", studentId.trim()), studentData)
+        );
 
         // Update parent state
         onStudentJoin(studentData, sessionData);
         onNext();
       } catch (err) {
         console.error("Firestore student join failed:", err);
-        setError('Error connecting to database. Please try again.');
+        let msg = 'Error connecting to database. Please try again.';
+        if (err.message?.includes("permission-denied") || err.message?.includes("PERMISSION_DENIED") || err.message?.includes("Cloud Firestore API")) {
+          msg = "Permission denied: Cloud Firestore API is not enabled for project 'future-studies-f1753'. Switch to Local Sandbox mode.";
+        } else if (err.message?.includes("timed out")) {
+          msg = err.message;
+        }
+        setError(msg);
       }
     } else {
       if (classData && sessionCodeUpper !== classData.sessionCode) {
@@ -116,10 +126,14 @@ export default function StudentJoin({
         const sessionCodeUpper = code.trim().toUpperCase();
         
         // Check if student exists in Firestore
-        const studentDoc = await getDoc(doc(db, "sessions", sessionCodeUpper, "students", studentIdClean));
+        const studentDoc = await runWithTimeout(
+          getDoc(doc(db, "sessions", sessionCodeUpper, "students", studentIdClean))
+        );
         if (studentDoc.exists()) {
           const studentData = studentDoc.data();
-          const sessionDoc = await getDoc(doc(db, "sessions", sessionCodeUpper));
+          const sessionDoc = await runWithTimeout(
+            getDoc(doc(db, "sessions", sessionCodeUpper))
+          );
           const sessionData = sessionDoc.data();
 
           onStudentJoin(studentData, sessionData);
@@ -130,7 +144,13 @@ export default function StudentJoin({
         }
       } catch (err) {
         console.error("Firestore rejoin failed:", err);
-        setRejoinError('Database error during rejoin.');
+        let msg = 'Database error during rejoin.';
+        if (err.message?.includes("permission-denied") || err.message?.includes("PERMISSION_DENIED") || err.message?.includes("Cloud Firestore API")) {
+          msg = "Permission denied: Cloud Firestore API is not enabled. Switch to Local Sandbox mode to continue.";
+        } else if (err.message?.includes("timed out")) {
+          msg = err.message;
+        }
+        setRejoinError(msg);
       }
     } else {
       const found = onRejoin(studentIdClean);
@@ -157,20 +177,20 @@ export default function StudentJoin({
               <Lock size={28} className="text-error" />
             </div>
             <h1
-              className="text-3xl sm:text-4xl font-bold text-white mb-2 tracking-tight"
+              className="text-3xl sm:text-4xl font-bold text-slate-800 mb-2 tracking-tight"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               Session{' '}
               <span className="text-error">Locked</span>
             </h1>
-            <p className="text-slate-400 text-sm leading-relaxed max-w-sm mx-auto">
+            <p className="text-slate-600 text-sm leading-relaxed max-w-sm mx-auto">
               This session is no longer accepting new students.
               If you joined earlier, enter your Student ID to rejoin.
             </p>
           </div>
 
           {/* Rejoin Card */}
-          <div className="glass p-6 sm:p-8 animate-slide-up">
+          <div className="glass p-6 sm:p-8 animate-slide-up border border-slate-200/80 shadow-xl">
             {rejoinSuccess ? (
               <div className="text-center py-6">
                 <div className="w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center bg-success/15 border border-success/25">
@@ -179,23 +199,23 @@ export default function StudentJoin({
                 <p className="text-success font-semibold text-lg mb-1">
                   Session Restored!
                 </p>
-                <p className="text-slate-400 text-sm">
+                <p className="text-slate-600 text-sm">
                   Redirecting you back to class…
                 </p>
               </div>
             ) : (
               <>
-                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-warning/8 border border-warning/15 mb-6">
+                <div className="flex items-center gap-2 px-3 py-2.5 rounded-lg bg-warning/10 border border-warning/20 mb-6">
                   <AlertTriangle size={15} className="text-warning shrink-0" />
-                  <p className="text-xs text-warning/90 leading-relaxed">
+                  <p className="text-xs text-warning/90 leading-relaxed font-medium">
                     Only students who previously joined can rejoin using their
                     original Student ID.
                   </p>
                 </div>
 
                 <div>
-                  <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
-                    <IdCard size={14} className="text-accent-400" />
+                  <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                    <IdCard size={14} className="text-accent-500" />
                     Student ID
                   </label>
                   <input
@@ -213,16 +233,27 @@ export default function StudentJoin({
                 </div>
 
                 {rejoinError && (
-                  <div className="flex items-center gap-2 text-error text-sm bg-error/10 px-4 py-2.5 rounded-lg border border-error/20 mt-4">
-                    <span>⚠</span>
-                    <span>{rejoinError}</span>
+                  <div className="flex flex-col gap-2.5 text-error text-sm bg-error/10 px-4 py-3 rounded-lg border border-error/20 mt-4 text-left">
+                    <div className="flex items-start gap-2">
+                      <span className="shrink-0 mt-0.5">⚠</span>
+                      <span className="leading-relaxed">{rejoinError}</span>
+                    </div>
+                    {rejoinError.includes("Permission denied") && (
+                      <button
+                        type="button"
+                        onClick={toggleForceLocalMode}
+                        className="self-start px-2.5 py-1 rounded bg-warning/20 hover:bg-warning/30 text-warning text-xs font-bold border border-warning/30 cursor-pointer mt-1"
+                      >
+                        Switch to Local Sandbox Mode
+                      </button>
+                    )}
                   </div>
                 )}
 
                 <button
                   type="button"
                   onClick={handleRejoin}
-                  className="btn-primary w-full mt-6 flex items-center justify-center gap-2 text-base"
+                  className="btn-primary w-full mt-6 flex items-center justify-center gap-2 text-base cursor-pointer"
                 >
                   <ShieldCheck size={18} />
                   Rejoin Session
@@ -248,32 +279,32 @@ export default function StudentJoin({
             <GraduationCap size={28} className="text-cyber-green" />
           </div>
           <h1
-            className="text-3xl sm:text-4xl font-bold text-white mb-2 tracking-tight"
+            className="text-3xl sm:text-4xl font-bold text-slate-800 mb-2 tracking-tight"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Join{' '}
-            <span className="bg-gradient-to-r from-cyber-green to-accent-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-cyber-green to-accent-500 bg-clip-text text-transparent">
               Session
             </span>
           </h1>
-          <p className="text-slate-400">
+          <p className="text-slate-600">
             Enter your details and the code from your teacher
           </p>
         </div>
 
         {/* Session info banner */}
         {classData && (
-          <div className="glass-light p-4 mb-6 flex items-center gap-3 animate-slide-up">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-accent-500/15">
-              <Sparkles size={18} className="text-accent-400" />
+          <div className="glass-light p-4 mb-6 flex items-center gap-3 animate-slide-up border border-slate-200/80 shadow-md">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-accent-500/10 border border-accent-500/20">
+              <Sparkles size={18} className="text-accent-500" />
             </div>
             <div className="text-left">
-              <p className="text-sm font-semibold text-white">
+              <p className="text-sm font-semibold text-slate-800">
                 {classData.title}
               </p>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Code:{' '}
-                <span className="text-accent-400 font-mono font-bold tracking-wider">
+                <span className="text-accent-600 font-mono font-bold tracking-wider">
                   {classData.sessionCode}
                 </span>
               </p>
@@ -282,12 +313,12 @@ export default function StudentJoin({
         )}
 
         {/* Form */}
-        <div className="glass p-6 sm:p-8 animate-slide-up">
+        <div className="glass p-6 sm:p-8 animate-slide-up border border-slate-200/80 shadow-xl">
           <div className="space-y-5">
             {/* Full Name */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
-                <User size={14} className="text-cyber-green" />
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                <User size={14} className="text-success" />
                 Full Name
               </label>
               <input
@@ -305,7 +336,7 @@ export default function StudentJoin({
 
             {/* Student ID */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
                 <IdCard size={14} className="text-cyber-purple" />
                 Student ID
               </label>
@@ -323,8 +354,8 @@ export default function StudentJoin({
 
             {/* Session Code */}
             <div>
-              <label className="flex items-center gap-2 text-sm font-medium text-slate-300 mb-2">
-                <Hash size={14} className="text-accent-400" />
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-700 mb-2">
+                <Hash size={14} className="text-accent-500" />
                 Session Code
               </label>
               <input
@@ -343,9 +374,20 @@ export default function StudentJoin({
 
             {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 text-error text-sm bg-error/10 px-4 py-2.5 rounded-lg border border-error/20">
-                <span>⚠</span>
-                <span>{error}</span>
+              <div className="flex flex-col gap-2.5 text-error text-sm bg-error/10 px-4 py-3 rounded-lg border border-error/20 text-left">
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 mt-0.5">⚠</span>
+                  <span className="leading-relaxed">{error}</span>
+                </div>
+                {error.includes("Permission denied") && (
+                  <button
+                    type="button"
+                    onClick={toggleForceLocalMode}
+                    className="self-start px-2.5 py-1 rounded bg-warning/20 hover:bg-warning/30 text-warning text-xs font-bold border border-warning/30 cursor-pointer mt-1"
+                  >
+                    Switch to Local Sandbox Mode
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -354,7 +396,7 @@ export default function StudentJoin({
           <button
             type="button"
             onClick={handleJoin}
-            className="btn-primary w-full mt-8 flex items-center justify-center gap-2 text-base"
+            className="btn-primary w-full mt-8 flex items-center justify-center gap-2 text-base cursor-pointer"
             style={{
               background: 'linear-gradient(135deg, #059669, #10b981)',
             }}
@@ -366,7 +408,7 @@ export default function StudentJoin({
         </div>
 
         {/* Token note */}
-        <p className="text-[11px] text-slate-600 text-center mt-4 px-6 leading-relaxed">
+        <p className="text-[11px] text-slate-500 text-center mt-4 px-6 leading-relaxed">
           A unique session token will be generated using your Student ID.
           Keep your Student ID handy in case you need to rejoin.
         </p>

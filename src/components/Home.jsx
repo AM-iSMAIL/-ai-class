@@ -18,19 +18,19 @@ export default function Home({ user, onLogin, onLogout, onNavigate }) {
 
       <div className="w-full max-w-4xl relative z-10 text-center stagger">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-400 text-xs font-medium mb-6 animate-slide-up select-none">
-          <Sparkles size={14} className="text-accent-400" />
+        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-600 text-xs font-medium mb-6 animate-slide-up select-none">
+          <Sparkles size={14} className="text-accent-500" />
           <span>Next-Gen Interactive Learning</span>
         </div>
 
         {/* Hero Headlines */}
         <h1 
-          className="text-4xl sm:text-6xl font-extrabold text-white mb-4 tracking-tight leading-none"
+          className="text-4xl sm:text-6xl font-extrabold text-slate-800 mb-4 tracking-tight leading-none animate-slide-up"
           style={{ fontFamily: 'var(--font-display)' }}
         >
-          Welcome to <span className="bg-gradient-to-r from-accent-400 via-cyber-purple to-cyber-pink bg-clip-text text-transparent">ClassAI</span>
+          Welcome to <span className="bg-gradient-to-r from-accent-600 via-cyber-purple to-cyber-pink bg-clip-text text-transparent">ClassAI</span>
         </h1>
-        <p className="text-slate-400 text-lg sm:text-xl max-w-xl mx-auto mb-12">
+        <p className="text-slate-600 text-lg sm:text-xl max-w-xl mx-auto mb-12 animate-slide-up">
           Experience real-time interactive lectures powered by AI, immediate quiz feedback, and gamified engagement.
         </p>
 
@@ -38,37 +38,37 @@ export default function Home({ user, onLogin, onLogout, onNavigate }) {
         <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto text-left">
           
           {/* Teacher Portal Card */}
-          <div className="glass p-8 relative overflow-hidden group hover:scale-[1.02] hover:bg-navy-900/80 transition-all duration-300 flex flex-col justify-between border border-accent-500/10 hover:border-accent-500/25 shadow-2xl">
+          <div className="glass p-8 relative overflow-hidden group hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between border border-slate-200 hover:border-accent-500/40 shadow-xl">
             <div className="absolute top-0 right-0 w-24 h-24 bg-accent-500/5 rounded-full filter blur-xl transition-all duration-500 group-hover:bg-accent-500/10" />
             
             <div>
               <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-accent-500/20 to-cyber-purple/20 border border-accent-500/20 mb-6">
-                <GraduationCap size={24} className="text-accent-400" />
+                <GraduationCap size={24} className="text-accent-600" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-3 font-display">Teacher Portal</h2>
-              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+              <h2 className="text-xl font-bold text-slate-800 mb-3 font-display">Teacher Portal</h2>
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
                 Configure your topics, host live AI-assisted classroom sessions, invite your students, and view real-time score statistics.
               </p>
             </div>
 
-            <div className="mt-4 pt-6 border-t border-white/5">
+            <div className="mt-4 pt-6 border-t border-slate-100">
               {user ? (
                 <div className="space-y-4">
                   {/* Active User profile details */}
-                  <div className="flex items-center gap-3 p-3 rounded-xl bg-navy-950/60 border border-white/5">
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-navy-900/5 border border-navy-700/10 text-slate-600">
                     {user.photoURL ? (
                       <img 
                         src={user.photoURL} 
                         alt={user.displayName} 
-                        className="w-10 h-10 rounded-full object-cover border border-white/10"
+                        className="w-10 h-10 rounded-full object-cover border border-slate-200"
                       />
                     ) : (
-                      <div className="w-10 h-10 rounded-full bg-accent-500/20 flex items-center justify-center font-bold text-accent-400">
+                      <div className="w-10 h-10 rounded-full bg-accent-500/20 flex items-center justify-center font-bold text-accent-500">
                         {user.displayName?.charAt(0) || 'T'}
                       </div>
                     )}
                     <div className="overflow-hidden">
-                      <p className="text-sm font-semibold text-white truncate">{user.displayName}</p>
+                      <p className="text-sm font-semibold text-slate-800 truncate">{user.displayName}</p>
                       <p className="text-xs text-slate-500 truncate">{user.email}</p>
                     </div>
                   </div>
@@ -85,7 +85,7 @@ export default function Home({ user, onLogin, onLogout, onNavigate }) {
                     <button
                       type="button"
                       onClick={onLogout}
-                      className="px-3 rounded-xl bg-navy-800 border border-white/10 hover:bg-navy-700 text-slate-400 hover:text-white transition-all cursor-pointer flex items-center justify-center"
+                      className="px-3 rounded-xl bg-slate-100 border border-slate-200 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all cursor-pointer flex items-center justify-center"
                       title="Sign Out"
                     >
                       <LogOut size={16} />
@@ -96,8 +96,8 @@ export default function Home({ user, onLogin, onLogout, onNavigate }) {
                 <button
                   type="button"
                   onClick={onLogin}
-                  className="btn-primary w-full flex items-center justify-center gap-3 py-3 rounded-xl text-sm font-bold bg-white text-navy-950 border border-white/20 hover:scale-[1.02] shadow-lg cursor-pointer transition-all duration-300"
-                  style={{ background: '#ffffff', color: '#0f1629' }}
+                  className="w-full flex items-center justify-center gap-3 py-3 rounded-xl text-sm font-bold bg-white text-slate-800 border border-slate-200 hover:scale-[1.02] shadow-sm cursor-pointer transition-all duration-300"
+                  style={{ background: '#ffffff', color: '#1a1a2a' }}
                 >
                   <GoogleIcon />
                   <span>Sign in with Google</span>
@@ -107,24 +107,24 @@ export default function Home({ user, onLogin, onLogout, onNavigate }) {
           </div>
 
           {/* Student Portal Card */}
-          <div className="glass p-8 relative overflow-hidden group hover:scale-[1.02] hover:bg-navy-900/80 transition-all duration-300 flex flex-col justify-between border border-cyber-green/10 hover:border-cyber-green/25 shadow-2xl">
+          <div className="glass p-8 relative overflow-hidden group hover:scale-[1.02] transition-all duration-300 flex flex-col justify-between border border-slate-200 hover:border-cyber-green/40 shadow-xl">
             <div className="absolute top-0 right-0 w-24 h-24 bg-cyber-green/5 rounded-full filter blur-xl transition-all duration-500 group-hover:bg-cyber-green/10" />
             
             <div>
               <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-cyber-green/20 to-accent-500/20 border border-cyber-green/20 mb-6">
                 <Users size={24} className="text-cyber-green" />
               </div>
-              <h2 className="text-xl font-bold text-white mb-3 font-display">Student Portal</h2>
-              <p className="text-slate-400 text-sm leading-relaxed mb-6">
+              <h2 className="text-xl font-bold text-slate-800 mb-3 font-display">Student Portal</h2>
+              <p className="text-slate-600 text-sm leading-relaxed mb-6">
                 Enter an active classroom session. Participate in live lectures, answer quiz questions, and climb the scoreboard.
               </p>
             </div>
 
-            <div className="mt-4 pt-6 border-t border-white/5">
+            <div className="mt-4 pt-6 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => onNavigate('student-join')}
-                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-cyber-green/20 to-accent-500/20 border border-cyber-green/30 hover:border-cyber-green/50 text-cyber-green hover:scale-[1.02] shadow-lg cursor-pointer transition-all duration-300"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-gradient-to-r from-cyber-green/10 to-accent-500/10 border border-cyber-green/30 hover:border-cyber-green/50 text-cyber-green hover:scale-[1.02] shadow-sm cursor-pointer transition-all duration-300"
               >
                 <span>Join Classroom Session</span>
                 <ArrowRight size={16} />
@@ -137,3 +137,4 @@ export default function Home({ user, onLogin, onLogout, onNavigate }) {
     </div>
   );
 }
+

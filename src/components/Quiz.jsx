@@ -12,12 +12,28 @@ import { db } from '../firebase';
 const QUESTION_COUNT = 3;
 const OPTION_CHARS = ['A', 'B', 'C', 'D'];
 
-const getLessonContext = (lessonParagraphs = []) =>
-  lessonParagraphs
+const getLessonContext = (lessonParagraphs = []) => {
+  if (!Array.isArray(lessonParagraphs) || lessonParagraphs.length === 0) return '';
+  
+  if (typeof lessonParagraphs[0] === 'object') {
+    return lessonParagraphs
+      .map((slide) => {
+        const title = slide.title || '';
+        const bullets = Array.isArray(slide.bulletPoints)
+          ? slide.bulletPoints.map((b) => `- ${b}`).join('\n')
+          : '';
+        const notes = slide.speakerNotes || '';
+        return `Slide: ${title}\nBullet Points:\n${bullets}\nSpeaker Notes: ${notes}`;
+      })
+      .join('\n\n');
+  }
+
+  return lessonParagraphs
     .filter(Boolean)
-    .map((paragraph) => paragraph.trim())
+    .map((paragraph) => String(paragraph).trim())
     .filter(Boolean)
     .join('\n\n');
+};
 
 const summarizeParagraph = (paragraph, fallback) => {
   if (!paragraph) return fallback;
@@ -27,16 +43,24 @@ const summarizeParagraph = (paragraph, fallback) => {
 
 // Offline fallback quiz generator that uses the same explanation shown in class.
 const getMockQuiz = (topic, lessonParagraphs = []) => {
+  const getSlideText = (slide, fallback) => {
+    if (!slide) return fallback;
+    if (typeof slide === 'object') {
+      return slide.speakerNotes || slide.title || fallback;
+    }
+    return String(slide);
+  };
+
   const firstConcept = summarizeParagraph(
-    lessonParagraphs[0],
+    getSlideText(lessonParagraphs[0], ''),
     `The explanation introduced the foundational ideas of ${topic}.`
   );
   const practicalConcept = summarizeParagraph(
-    lessonParagraphs[2],
+    getSlideText(lessonParagraphs[2], ''),
     `The explanation connected ${topic} to real-world constraints and applications.`
   );
   const synthesisConcept = summarizeParagraph(
-    lessonParagraphs[3],
+    getSlideText(lessonParagraphs[3], ''),
     `The explanation closed by connecting theory, observation, and problem solving.`
   );
 
@@ -208,7 +232,7 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
 
       try {
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
           {
             method: 'POST',
             headers: {
@@ -349,11 +373,11 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12 relative">
         <div className="orb orb-purple w-72 h-72 top-10 right-10" />
-        <div className="w-10 h-10 rounded-full border-4 border-slate-700 border-t-cyber-purple animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-white mb-2 tracking-tight">
+        <div className="w-10 h-10 rounded-full border-4 border-slate-200 border-t-accent-500 animate-spin mb-4" />
+        <h2 className="text-xl font-bold text-slate-800 mb-2 tracking-tight">
           AI is loading...
         </h2>
-        <p className="text-slate-400 text-xs font-mono">
+        <p className="text-slate-600 text-xs font-mono">
           Formulating questions for: {topicName}
         </p>
       </div>
@@ -369,23 +393,23 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
         <div className={`orb ${hasStrike ? 'orb-green' : 'orb-blue'} w-80 h-80 -top-20 -right-20`} />
         
         <div className="w-full max-w-md relative z-10 text-center animate-slide-up">
-          <div className="glass p-8 mb-6 gradient-border">
-            <h1 className="text-3xl font-extrabold text-white mb-2 font-display">
+          <div className="glass p-8 mb-6 border border-slate-200/80 shadow-xl gradient-border">
+            <h1 className="text-3xl font-extrabold text-slate-800 mb-2 font-display">
               Quiz Submitted!
             </h1>
-            <p className="text-slate-400 text-sm mb-6 uppercase tracking-wider font-mono">
+            <p className="text-slate-500 text-sm mb-6 uppercase tracking-wider font-mono">
               Brief assessment report
             </p>
 
             <div
-              className="text-7xl font-bold mb-4 font-display"
+              className="text-6xl font-bold mb-4 font-display"
               style={{
                 background: `linear-gradient(135deg, ${
                   score === 3
-                    ? '#00ffa3, #10b981'
+                    ? '#10b981, #059669'
                     : score > 0
-                    ? '#5994ff, #3b76ff'
-                    : '#ef4444, #ff3cac'
+                    ? '#0b5fff, #003cac'
+                    : '#dc2626, #b91c1c'
                 })`,
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
@@ -395,12 +419,12 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
             </div>
 
             {hasStrike ? (
-              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-error/10 border border-error/20 text-error text-xs font-semibold justify-center animate-bounce mb-3">
+              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-error/10 border border-error/20 text-error text-xs font-bold justify-center animate-bounce mb-3">
                 <Flame size={14} className="fill-error" />
                 STRIKE ADDED! Score was 0/3.
               </div>
             ) : (
-              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-success/10 border border-success/20 text-success text-xs font-semibold justify-center mb-3">
+              <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-success/10 border border-success/20 text-success text-xs font-bold justify-center mb-3">
                 <CheckCircle2 size={14} />
                 Good job! Clear rating achieved.
               </div>
@@ -415,8 +439,8 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
                     key={idx}
                     className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold border ${
                       isCorrect
-                        ? 'bg-success/15 border-success/30 text-success'
-                        : 'bg-error/15 border-error/30 text-error'
+                        ? 'bg-success/10 border-success/30 text-success'
+                        : 'bg-error/10 border-error/30 text-error'
                     }`}
                   >
                     Q{idx + 1}
@@ -427,13 +451,13 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
           </div>
 
           {db && studentInfo ? (
-            <div className="flex items-center gap-2 px-4 py-2 bg-navy-900 border border-white/5 rounded-xl text-[10px] font-mono font-bold text-slate-400 justify-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-cyber-purple animate-ping" />
+            <div className="flex items-center gap-2 px-4 py-2 bg-accent-50 border border-accent-100 rounded-xl text-[10px] font-mono font-bold text-slate-600 justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-accent-500 animate-ping" />
               WAITING FOR TEACHER TO START NEXT TOPIC...
             </div>
           ) : (
-            <div className="flex items-center gap-2 px-4 py-2 bg-navy-900 border border-white/5 rounded-xl text-[10px] font-mono font-bold text-slate-400 justify-center">
-              <div className="w-1.5 h-1.5 rounded-full bg-cyber-purple animate-ping" />
+            <div className="flex items-center gap-2 px-4 py-2 bg-accent-50 border border-accent-100 rounded-xl text-[10px] font-mono font-bold text-slate-600 justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-accent-500 animate-ping" />
               LOADING NEXT TOPIC IN {countdownTransition} SECONDS...
             </div>
           )}
@@ -444,7 +468,7 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
 
   const timerColor =
     timeLeft > 60
-      ? 'text-cyber-green'
+      ? 'text-success'
       : timeLeft > 20
       ? 'text-warning animate-pulse'
       : 'text-error animate-pulse font-extrabold';
@@ -454,13 +478,13 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
       <div className="orb orb-blue w-80 h-80 -top-20 -right-20" />
 
       {/* Header and Timer Bar */}
-      <div className="glass-light p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 animate-slide-up border border-white/5">
+      <div className="glass-light p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 animate-slide-up border border-slate-200/80 shadow-md">
         <div>
-          <h1 className="text-lg font-bold text-white font-display">
+          <h1 className="text-lg font-bold text-slate-800 font-display">
             Quick Check — 3 Minutes
           </h1>
-          <p className="text-slate-400 text-xs mt-0.5">
-            Topic Evaluation: <span className="text-accent-300 font-semibold">{topicName}</span>
+          <p className="text-slate-650 text-xs mt-0.5">
+            Topic Evaluation: <span className="text-accent-600 font-bold">{topicName}</span>
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -468,12 +492,12 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
             <button
               type="button"
               onClick={onNext}
-              className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-error/15 hover:bg-error/25 text-error border border-error/20 cursor-pointer transition-all duration-200"
+              className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-error/10 hover:bg-error/20 text-error border border-error/20 cursor-pointer transition-all duration-200"
             >
               Skip Quiz & Advance
             </button>
           )}
-          <div className={`flex items-center gap-2 px-4 py-2 bg-navy-950 border border-white/5 rounded-xl text-base font-mono font-bold ${timerColor} shadow-inner`}>
+          <div className={`flex items-center gap-2 px-4 py-2 bg-accent-50 border border-accent-100 rounded-xl text-base font-mono font-bold ${timerColor} shadow-inner`}>
             <Clock size={16} />
             <span>{formatTime(timeLeft)}</span>
           </div>
@@ -494,12 +518,12 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
         {questions.map((q, qIdx) => {
           const selected = selectedAnswers[qIdx];
           return (
-            <div key={q.id} className="glass p-6 sm:p-8">
+            <div key={q.id} className="glass p-6 sm:p-8 border border-slate-200/80 shadow-lg">
               <div className="flex items-start gap-3.5 mb-5">
-                <span className="w-8 h-8 rounded-lg bg-accent-500/10 border border-accent-500/20 text-accent-400 font-mono font-bold text-xs flex items-center justify-center shrink-0">
+                <span className="w-8 h-8 rounded-lg bg-accent-500/10 border border-accent-500/20 text-accent-600 font-mono font-bold text-xs flex items-center justify-center shrink-0">
                   {q.id.toString().padStart(2, '0')}
                 </span>
-                <h2 className="text-base sm:text-lg font-semibold text-white leading-relaxed">
+                <h2 className="text-base sm:text-lg font-bold text-slate-800 leading-relaxed">
                   {q.question}
                 </h2>
               </div>
@@ -520,15 +544,15 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
                         transition-all duration-300 border border-transparent cursor-pointer
                         ${
                           isSelected
-                            ? 'bg-accent-500/10 border-accent-500 text-white'
-                            : 'glass-light hover:border-white/10 hover:bg-white/5 text-slate-300'
+                            ? 'bg-accent-50 border-accent-500 text-accent-600 font-semibold'
+                            : 'glass-light hover:border-slate-200 hover:bg-slate-50 text-slate-700'
                         }
                       `}
                     >
                       <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                         isSelected 
                           ? 'bg-accent-500 text-white' 
-                          : 'bg-navy-700 text-slate-400'
+                          : 'bg-navy-800 text-slate-600'
                       }`}>
                         {optChar}
                       </span>
@@ -547,7 +571,7 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
         <button
           type="button"
           onClick={handleSubmit}
-          className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base font-bold shadow-lg glow-accent"
+          className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base font-bold shadow-lg glow-accent cursor-pointer"
         >
           <Trophy size={18} />
           Submit Quiz

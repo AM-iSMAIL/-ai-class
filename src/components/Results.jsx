@@ -135,29 +135,29 @@ export default function Results({
       <div className="relative z-10 stagger space-y-8">
         {/* Header */}
         <div className="text-center animate-slide-up">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-400 text-xs font-medium mb-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-600 text-xs font-medium mb-4">
             <Award size={14} />
             <span>Educator Panel — Final Summary</span>
           </div>
           <h1
-            className="text-3xl sm:text-4xl font-extrabold text-white mb-2 tracking-tight"
+            className="text-3xl sm:text-4xl font-extrabold text-slate-800 mb-2 tracking-tight"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             {classData?.title || 'ClassAI Session'}
           </h1>
-          <p className="text-slate-400 text-sm font-mono">
+          <p className="text-slate-600 text-sm font-mono font-medium">
             Session Code: {classData?.sessionCode} • 6 Topics Complete
           </p>
         </div>
 
         {/* Educator Statistics Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 animate-slide-up">
-          <div className="glass p-5 flex items-center justify-between border-l-4 border-l-success">
+          <div className="glass p-5 flex items-center justify-between border border-slate-200/80 shadow-md border-l-4 border-l-success">
             <div>
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block font-mono">
                 Students Present
               </span>
-              <span className="text-3xl font-extrabold text-white font-display mt-1 block">
+              <span className="text-3xl font-extrabold text-slate-800 font-display mt-1 block">
                 {presentCount}
               </span>
             </div>
@@ -166,12 +166,12 @@ export default function Results({
             </div>
           </div>
 
-          <div className="glass p-5 flex items-center justify-between border-l-4 border-l-error">
+          <div className="glass p-5 flex items-center justify-between border border-slate-200/80 shadow-md border-l-4 border-l-error">
             <div>
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block font-mono">
                 Students Absent
               </span>
-              <span className="text-3xl font-extrabold text-white font-display mt-1 block">
+              <span className="text-3xl font-extrabold text-slate-850 font-display mt-1 block">
                 {absentCount}
               </span>
             </div>
@@ -180,33 +180,33 @@ export default function Results({
             </div>
           </div>
 
-          <div className="glass p-5 flex items-center justify-between border-l-4 border-l-accent-500">
+          <div className="glass p-5 flex items-center justify-between border border-slate-200/80 shadow-md border-l-4 border-l-accent-500">
             <div>
               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest block font-mono">
                 Class Average
               </span>
-              <span className="text-3xl font-extrabold text-white font-display mt-1 block font-mono">
-                {averageClassScore} <span className="text-xs text-slate-400 font-sans">/ 18</span>
+              <span className="text-3xl font-extrabold text-slate-800 font-display mt-1 block font-mono">
+                {averageClassScore} <span className="text-xs text-slate-550 font-sans">/ 18</span>
               </span>
             </div>
-            <div className="w-12 h-12 rounded-xl bg-accent-500/10 flex items-center justify-center text-accent-400">
+            <div className="w-12 h-12 rounded-xl bg-accent-500/10 flex items-center justify-center text-accent-600">
               <BarChart3 size={22} />
             </div>
           </div>
         </div>
 
         {/* Attendance & Score Breakdown Table */}
-        <div className="glass p-6 animate-slide-up border border-white/5 relative overflow-hidden">
+        <div className="glass p-6 animate-slide-up border border-slate-200/80 shadow-xl relative overflow-hidden">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-2">
               <Users size={18} className="text-cyber-purple" />
-              <h2 className="text-base font-bold text-white font-display uppercase tracking-wide">
+              <h2 className="text-base font-bold text-slate-800 font-display uppercase tracking-wide">
                 Attendance & Performance Log
               </h2>
             </div>
             
             {/* Status Summary Banner */}
-            <div className="text-xs text-slate-400 font-mono bg-navy-950 border border-white/5 px-3 py-1.5 rounded-lg">
+            <div className="text-xs text-slate-600 font-mono bg-navy-900 border border-slate-200/60 px-3 py-1.5 rounded-lg font-medium">
               Class Summary: <span className="text-success font-bold">{presentCount} Present</span>,{' '}
               <span className="text-error font-bold">{absentCount} Absent</span>
             </div>
@@ -216,7 +216,7 @@ export default function Results({
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="border-b border-white/10 text-slate-400 text-[10px] font-bold uppercase tracking-wider font-mono bg-white/2">
+                <tr className="border-b border-slate-200/80 text-slate-650 text-[10px] font-bold uppercase tracking-wider font-mono bg-slate-50">
                   <th className="py-3.5 px-4 rounded-tl-xl">Student Name</th>
                   <th className="py-3.5 px-3">Student ID</th>
                   <th className="py-3.5 px-2 text-center">Q1</th>
@@ -229,7 +229,7 @@ export default function Results({
                   <th className="py-3.5 px-4 text-center rounded-tr-xl">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-white/5 text-sm text-slate-300">
+              <tbody className="divide-y divide-slate-200/60 text-sm text-slate-650">
                 {studentRows.map((row, idx) => {
                   const isUser = tok => tok.studentId === row.studentId && tok.sessionToken && !tok.sessionToken.includes('_mock');
                   const isActiveUser = isUser(row);
@@ -237,16 +237,16 @@ export default function Results({
                   return (
                     <tr
                       key={idx}
-                      className={`hover:bg-white/2 transition-colors duration-150 ${
+                      className={`hover:bg-slate-50/50 transition-colors duration-150 ${
                         isActiveUser ? 'bg-accent-500/5' : ''
                       }`}
                     >
                       {/* Name */}
-                      <td className="py-4 px-4 font-semibold text-white truncate max-w-[150px]">
+                      <td className="py-4 px-4 font-semibold text-slate-800 truncate max-w-[150px]">
                         <div className="flex items-center gap-1.5">
                           {row.fullName}
                           {isActiveUser && (
-                            <span className="bg-accent-500/10 border border-accent-500/20 text-accent-400 text-[8px] px-1 py-0.5 rounded font-mono font-bold">
+                            <span className="bg-accent-500/10 border border-accent-500/20 text-accent-600 text-[8px] px-1 py-0.5 rounded font-mono font-bold">
                               YOU
                             </span>
                           )}
@@ -254,19 +254,19 @@ export default function Results({
                       </td>
 
                       {/* ID */}
-                      <td className="py-4 px-3 font-mono text-xs text-slate-400">
+                      <td className="py-4 px-3 font-mono text-xs text-slate-500">
                         {row.studentId}
                       </td>
 
                       {/* Quiz Scores */}
                       {row.scores.map((score, sIdx) => {
-                        let scoreColor = 'text-slate-500';
+                        let scoreColor = 'text-slate-400';
                         if (score !== null) {
                           scoreColor =
                             score === 3
-                              ? 'text-cyber-green font-bold'
+                              ? 'text-success font-bold'
                               : score > 0
-                              ? 'text-slate-200'
+                              ? 'text-slate-700 font-semibold'
                               : 'text-error font-bold';
                         }
                         return (
@@ -280,7 +280,7 @@ export default function Results({
                       })}
 
                       {/* Total Score */}
-                      <td className="py-4 px-3 text-center font-mono font-bold text-white">
+                      <td className="py-4 px-3 text-center font-mono font-bold text-slate-800">
                         {row.totalScore} <span className="text-[10px] text-slate-500 font-normal">/18</span>
                       </td>
 
@@ -289,8 +289,8 @@ export default function Results({
                         <span
                           className={`inline-flex items-center gap-1.5 border px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider font-mono ${
                             row.isPresent
-                              ? 'bg-success/15 border-success/30 text-success'
-                              : 'bg-error/15 border-error/30 text-error animate-pulse'
+                              ? 'bg-success/10 border-success/30 text-success'
+                              : 'bg-error/10 border-error/30 text-error animate-pulse'
                           }`}
                         >
                           {row.isPresent ? (
@@ -321,7 +321,7 @@ export default function Results({
             type="button"
             onClick={downloadReport}
             disabled={studentRows.length === 0}
-            className="btn-primary flex-1 flex items-center justify-center gap-2 text-base !py-4 shadow-lg glow-accent disabled:opacity-40 disabled:scale-100 disabled:cursor-not-allowed border-none"
+            className="btn-primary flex-1 flex items-center justify-center gap-2 text-base !py-4 shadow-lg glow-accent disabled:opacity-40 disabled:scale-100 disabled:cursor-not-allowed border-none cursor-pointer"
           >
             <Download size={18} />
             Download Report (CSV)
@@ -330,7 +330,7 @@ export default function Results({
           <button
             type="button"
             onClick={onRestart}
-            className="btn-secondary flex-1 flex items-center justify-center gap-2 text-base !py-4"
+            className="btn-secondary flex-1 flex items-center justify-center gap-2 text-base !py-4 cursor-pointer"
           >
             <RotateCcw size={18} />
             Start New Session

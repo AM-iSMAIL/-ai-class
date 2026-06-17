@@ -2,43 +2,12 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-const hasFirebaseKeys = !!(
-  import.meta.env.VITE_FIREBASE_API_KEY &&
-  import.meta.env.VITE_FIREBASE_AUTH_DOMAIN &&
-  import.meta.env.VITE_FIREBASE_PROJECT_ID
-);
-
-console.log("hasFirebaseKeys status:", hasFirebaseKeys);
-console.log("API Key loaded:", import.meta.env.VITE_FIREBASE_API_KEY ? import.meta.env.VITE_FIREBASE_API_KEY.substring(0, 10) + "..." : "undefined");
-console.log("Project ID loaded:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
-
 let authInstance = null;
 let googleProviderInstance = null;
 let dbInstance = null;
-let isMock = false;
+const isMock = true; // Forced offline Local Sandbox Mode
 
-if (hasFirebaseKeys) {
-  try {
-    const firebaseConfig = {
-      apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-      authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-      projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-      storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-      messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-      appId: import.meta.env.VITE_FIREBASE_APP_ID
-    };
-    const app = initializeApp(firebaseConfig);
-    authInstance = getAuth(app);
-    googleProviderInstance = new GoogleAuthProvider();
-    dbInstance = getFirestore(app);
-  } catch (err) {
-    console.warn("Firebase initialization failed, switching to mock auth mode:", err);
-    isMock = true;
-  }
-} else {
-  console.log("No Firebase config keys found in environment. Running ClassAI in Mock Auth mode.");
-  isMock = true;
-}
+console.log("Running ClassAI in offline Local Sandbox Mode. Firebase database sync disabled.");
 
 // Mock auth setup
 const mockAuth = {
@@ -80,3 +49,26 @@ export const signOutUser = async () => {
   }
 };
 export const authIsMock = isMock;
+export const isLocalSandboxMode = isMock;
+export const toggleForceLocalMode = () => {
+  const current = localStorage.getItem('classai_force_local_mode') === 'true';
+  localStorage.setItem('classai_force_local_mode', (!current).toString());
+  window.location.reload();
+};
+
+export const runWithTimeout = async (promise, timeoutMs = 6000) => {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error("Database connection timed out. Please check your Firestore security rules, Firebase setup, or switch to Local Sandbox Mode."));
+    }, timeoutMs);
+  });
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    return result;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
+
+

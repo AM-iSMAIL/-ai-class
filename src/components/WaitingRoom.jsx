@@ -110,6 +110,15 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
         updateDoc(doc(db, "sessions", classData.sessionCode), {
           status: 'teaching'
         }).catch(err => console.error("Firestore session start failed:", err));
+      } else if (!db && classData?.sessionCode && !studentInfo) {
+        const channel = new BroadcastChannel('classai_local_sync');
+        channel.postMessage({
+          type: 'SESSION_STATE_UPDATE',
+          payload: {
+            status: 'teaching'
+          }
+        });
+        channel.close();
       }
     }
   }, [secondsLeft, locked, onSessionLock, classData?.sessionCode, studentInfo]);
@@ -141,14 +150,14 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
   // Timer color
   const timerColor =
     secondsLeft > 180
-      ? 'text-cyber-green'
+      ? 'text-success'
       : secondsLeft > 60
       ? 'text-warning'
       : 'text-error';
 
   const ringColor =
     secondsLeft > 180
-      ? 'stroke-cyber-green'
+      ? 'stroke-success'
       : secondsLeft > 60
       ? 'stroke-warning'
       : 'stroke-error';
@@ -164,37 +173,37 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
             <div
               className={`w-20 h-20 rounded-2xl mx-auto mb-6 flex items-center justify-center border transition-all duration-700 ${
                 transitioning
-                  ? 'bg-accent-500/15 border-accent-500/25'
+                  ? 'bg-accent-500/10 border-accent-500/20'
                   : 'bg-error/10 border-error/20'
               }`}
             >
               {transitioning ? (
-                <Rocket size={34} className="text-accent-400 animate-float" />
+                <Rocket size={34} className="text-accent-500 animate-float" />
               ) : (
                 <Lock size={34} className="text-error" />
               )}
             </div>
 
             <h1
-              className="text-3xl sm:text-4xl font-bold text-white mb-3 tracking-tight"
+              className="text-3xl sm:text-4xl font-bold text-slate-850 mb-3 tracking-tight"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               {transitioning ? (
                 <>
                   Class is{' '}
-                  <span className="bg-gradient-to-r from-accent-400 to-cyber-green bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-accent-600 to-success bg-clip-text text-transparent">
                     Starting…
                   </span>
                 </>
               ) : (
                 <>
                   Session is Now{' '}
-                  <span className="text-error">Locked</span>
+                  <span className="text-error font-extrabold">Locked</span>
                 </>
               )}
             </h1>
 
-            <p className="text-slate-400 text-base mb-8">
+            <p className="text-slate-650 text-base mb-8">
               {transitioning
                 ? 'Preparing your classroom experience'
                 : 'No new students can join. Class is starting…'}
@@ -202,9 +211,9 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
 
             {/* Loading bar */}
             <div className="max-w-xs mx-auto">
-              <div className="h-1.5 rounded-full bg-navy-800 overflow-hidden">
+              <div className="h-1.5 rounded-full bg-navy-800 overflow-hidden border border-slate-200/50">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-accent-500 to-cyber-green transition-all duration-[3000ms] ease-linear"
+                  className="h-full rounded-full bg-gradient-to-r from-accent-500 to-success transition-all duration-[3000ms] ease-linear"
                   style={{ width: transitioning ? '100%' : '30%' }}
                 />
               </div>
@@ -226,22 +235,22 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
       <div className="w-full max-w-2xl relative z-10">
         {/* Header */}
         <div className="text-center mb-8 animate-slide-up">
-          <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-accent-500/10 border border-accent-500/20 mb-5 pulse-ring text-accent-400">
-            <Wifi size={32} className="text-accent-400 animate-float" />
+          <div className="relative inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-accent-500/10 border border-accent-500/20 mb-5 pulse-ring text-accent-500">
+            <Wifi size={32} className="text-accent-500 animate-float" />
           </div>
           <h1
-            className="text-3xl sm:text-4xl font-bold text-white mb-2 tracking-tight"
+            className="text-3xl sm:text-4xl font-bold text-slate-800 mb-2 tracking-tight"
             style={{ fontFamily: 'var(--font-display)' }}
           >
             Waiting Room
           </h1>
-          <p className="text-slate-400">
+          <p className="text-slate-650">
             Waiting for session to begin…
           </p>
         </div>
 
         {/* Timer Card */}
-        <div className="glass p-6 sm:p-8 text-center mb-6 animate-slide-up">
+        <div className="glass p-6 sm:p-8 text-center mb-6 animate-slide-up border border-slate-200/80 shadow-xl">
           <div className="flex flex-col items-center">
             {/* Circular timer */}
             <div className="relative w-36 h-36 mb-5">
@@ -282,7 +291,7 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
             </div>
 
             <div className="flex flex-col sm:flex-row items-center gap-3 mt-4 justify-center">
-              <div className="flex items-center gap-2 text-xs text-slate-400">
+              <div className="flex items-center gap-2 text-xs text-slate-550">
                 <Timer size={13} />
                 <span>Session locks when timer reaches zero</span>
               </div>
@@ -295,13 +304,13 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
                   if (window.speechSynthesis) {
                     window.speechSynthesis.cancel();
                   }
-
+ 
                   // Stop previous test audio
                   if (testAudioRef.current) {
                     testAudioRef.current.pause();
                     testAudioRef.current = null;
                   }
-
+ 
                   if (elevenLabsApiKey) {
                     try {
                       const response = await fetch('https://api.elevenlabs.io/v1/text-to-speech/21m00Tcm4TlvDq8ikWAM', {
@@ -331,7 +340,7 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
                   } else {
                     fallbackSpeech(testText);
                   }
-
+ 
                   function fallbackSpeech(text) {
                     if (window.speechSynthesis) {
                       const utterance = new SpeechSynthesisUtterance(text);
@@ -342,7 +351,7 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
                     }
                   }
                 }}
-                className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-accent-500/10 hover:bg-accent-500/20 text-accent-300 border-none cursor-pointer flex items-center gap-1.5 transition-all duration-200"
+                className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-accent-500/10 hover:bg-accent-500/20 text-accent-600 border-none cursor-pointer flex items-center gap-1.5 transition-all duration-200"
               >
                 🔊 Test Voice
               </button>
@@ -352,22 +361,22 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
 
         {/* Session Info Bar */}
         {classData && (
-          <div className="glass-light p-4 flex flex-wrap items-center justify-center gap-6 mb-6 animate-slide-up text-sm">
+          <div className="glass-light p-4 flex flex-wrap items-center justify-center gap-6 mb-6 animate-slide-up text-sm border border-slate-200/80 shadow-md">
             <div className="flex items-center gap-2">
-              <span className="text-slate-400">Session:</span>
-              <span className="text-white font-semibold">
+              <span className="text-slate-500">Session:</span>
+              <span className="text-slate-800 font-semibold">
                 {classData.title}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-slate-400">Code:</span>
-              <span className="text-accent-400 font-mono font-bold tracking-wider">
+              <span className="text-slate-500">Code:</span>
+              <span className="text-accent-600 font-mono font-bold tracking-wider">
                 {classData.sessionCode}
               </span>
             </div>
             <div className="flex items-center gap-2">
-              <Clock size={14} className="text-cyber-green" />
-              <span className="text-slate-300">
+              <Clock size={14} className="text-success" />
+              <span className="text-slate-600 font-medium">
                 {classData.duration * 6} min total
               </span>
             </div>
@@ -375,17 +384,17 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
         )}
 
         {/* Student List */}
-        <div className="glass p-6 mb-6 animate-slide-up">
+        <div className="glass p-6 mb-6 animate-slide-up border border-slate-200/80 shadow-xl">
           <div className="flex items-center justify-between mb-5">
-            <div className="flex items-center gap-2 text-sm font-medium text-slate-300">
-              <Users size={16} className="text-accent-400" />
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+              <Users size={16} className="text-accent-500" />
               Students Joined
             </div>
             <div className="flex items-center gap-1.5 text-sm">
-              <span className="text-accent-400 font-bold">
+              <span className="text-accent-600 font-bold">
                 {studentList.length}
               </span>
-              <span className="text-slate-500">connected</span>
+              <span className="text-slate-500 font-medium">connected</span>
             </div>
           </div>
 
@@ -393,7 +402,7 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
             {studentList.map((student, idx) => (
               <div
                 key={student.id}
-                className="glass-light p-3.5 flex items-center gap-3 animate-slide-up"
+                className="glass-light p-3.5 flex items-center gap-3 animate-slide-up border border-slate-200/60"
                 style={{ animationDelay: `${idx * 0.1}s` }}
               >
                 {/* Avatar */}
@@ -411,10 +420,10 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
 
                 {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">
+                  <p className="text-sm font-semibold text-slate-800 truncate">
                     {student.name}
                     {student.isSelf && (
-                      <span className="ml-2 text-[10px] font-semibold text-accent-400 bg-accent-500/10 px-1.5 py-0.5 rounded-full">
+                      <span className="ml-2 text-[10px] font-semibold text-accent-600 bg-accent-500/10 px-1.5 py-0.5 rounded-full">
                         YOU
                       </span>
                     )}
@@ -425,7 +434,7 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
                 </div>
 
                 {/* Status */}
-                <div className="flex items-center gap-1 text-[11px] text-cyber-green shrink-0">
+                <div className="flex items-center gap-1 text-[11px] text-success font-semibold shrink-0">
                   <CheckCircle2 size={12} />
                   <span>Connected</span>
                 </div>
@@ -435,7 +444,7 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
         </div>
 
         {/* Security note */}
-        <div className="flex items-center justify-center gap-2 text-[11px] text-slate-600 animate-slide-up">
+        <div className="flex items-center justify-center gap-2 text-[11px] text-slate-500 animate-slide-up">
           <Shield size={12} />
           <span>
             Session token:{' '}

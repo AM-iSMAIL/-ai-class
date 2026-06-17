@@ -44,9 +44,9 @@ function App() {
   
   // Topic Coordination, API Key, and Strikes tracking
   const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('classai_gemini_api_key') || '');
-  const [unsplashClientId, setUnsplashClientId] = useState(() => localStorage.getItem('classai_unsplash_client_id') || '');
-  const [elevenLabsApiKey, setElevenLabsApiKey] = useState(() => localStorage.getItem('classai_elevenlabs_api_key') || '');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('classai_gemini_api_key') || import.meta.env.VITE_GEMINI_API_KEY || '');
+  const [unsplashClientId, setUnsplashClientId] = useState(() => localStorage.getItem('classai_unsplash_client_id') || import.meta.env.VITE_UNSPLASH_CLIENT_ID || '');
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useState(() => localStorage.getItem('classai_elevenlabs_api_key') || import.meta.env.VITE_ELEVENLABS_API_KEY || '');
   const [strikeCount, setStrikeCount] = useState(0);
   const [accumulatedQuizResults, setAccumulatedQuizResults] = useState({
     score: 0,
@@ -97,6 +97,63 @@ function App() {
 
     return () => unsubscribe();
   }, [classData?.sessionCode, studentInfo, currentTopicIndex]);
+
+  // Listen to BroadcastChannel in mock mode (no db) for student navigation sync
+  useEffect(() => {
+    if (db) return; // Only for local sandbox mode
+    
+    const channel = new BroadcastChannel('classai_local_sync');
+    
+    const handleMessage = (event) => {
+      const { type, payload } = event.data;
+      
+      if (type === 'REQUEST_SYNC') {
+        // Teacher tab responds with current session details
+        if (classData && !studentInfo) {
+          channel.postMessage({
+            type: 'SESSION_STATE_UPDATE',
+            payload: {
+              status: currentScreen,
+              currentTopicIndex: currentTopicIndex,
+              classData: classData
+            }
+          });
+        }
+      } else if (type === 'SESSION_STATE_UPDATE') {
+        const { status, currentTopicIndex: nextTopic, classData: newClassData } = payload;
+        
+        // Only student tabs receive states
+        if (studentInfo) {
+          if (status) {
+            if (status === 'waiting') setCurrentScreen('waiting-room');
+            else if (status === 'teaching') setCurrentScreen('classroom');
+            else if (status === 'quiz') setCurrentScreen('quiz');
+            else if (status === 'results') setCurrentScreen('results');
+          }
+          
+          if (nextTopic !== undefined) {
+            setCurrentTopicIndex(nextTopic);
+          }
+          
+          if (newClassData) {
+            setClassData(newClassData);
+          }
+        }
+      }
+    };
+    
+    channel.addEventListener('message', handleMessage);
+    
+    // Send sync request immediately if this is a student tab
+    if (studentInfo) {
+      channel.postMessage({ type: 'REQUEST_SYNC' });
+    }
+    
+    return () => {
+      channel.removeEventListener('message', handleMessage);
+      channel.close();
+    };
+  }, [db, classData, studentInfo, currentScreen, currentTopicIndex]);
 
   const handleLogin = async () => {
     // Instant login bypass to prevent Firebase Key issues from blocking development
@@ -270,6 +327,17 @@ function App() {
           status: 'teaching',
           currentTopicIndex: nextTopic
         }).catch(err => console.error("Firestore next topic transition failed:", err));
+      } else if (!db && classData?.sessionCode && !studentInfo) {
+        // Sync via BroadcastChannel
+        const channel = new BroadcastChannel('classai_local_sync');
+        channel.postMessage({
+          type: 'SESSION_STATE_UPDATE',
+          payload: {
+            status: 'teaching',
+            currentTopicIndex: nextTopic
+          }
+        });
+        channel.close();
       }
     } else {
       setCurrentScreen('results');
@@ -279,6 +347,16 @@ function App() {
         updateDoc(doc(db, "sessions", classData.sessionCode), {
           status: 'results'
         }).catch(err => console.error("Firestore results transition failed:", err));
+      } else if (!db && classData?.sessionCode && !studentInfo) {
+        // Sync via BroadcastChannel
+        const channel = new BroadcastChannel('classai_local_sync');
+        channel.postMessage({
+          type: 'SESSION_STATE_UPDATE',
+          payload: {
+            status: 'results'
+          }
+        });
+        channel.close();
       }
     }
   };
