@@ -7,6 +7,7 @@ import {
   AlertTriangle,
   Flame,
 } from 'lucide-react';
+import { db } from '../firebase';
 
 const QUESTION_COUNT = 3;
 const OPTION_CHARS = ['A', 'B', 'C', 'D'];
@@ -165,6 +166,7 @@ export default function Quiz({
   topicName,
   lessonParagraphs = [],
   apiKey,
+  studentInfo,
 }) {
   const [questions, setQuestions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -315,16 +317,17 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
     return () => clearTimeout(timer);
   }, [timeLeft, submitted, loading, handleSubmit]);
 
-  // 3. Post-submission 5-second redirect countdown timer
+  // 3. Post-submission 5-second redirect countdown timer (Teacher only in online mode)
   useEffect(() => {
     if (!submitted) return;
+    if (db && studentInfo) return; // Students wait for teacher to sync screen
     if (countdownTransition <= 0) {
       onNext();
       return;
     }
     const timer = setTimeout(() => setCountdownTransition((c) => c - 1), 1000);
     return () => clearTimeout(timer);
-  }, [submitted, countdownTransition, onNext]);
+  }, [submitted, countdownTransition, onNext, studentInfo]);
 
   // Form option selection handler
   const handleSelect = (questionIdx, optionChar) => {
@@ -423,10 +426,17 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
             </div>
           </div>
 
-          <div className="flex items-center gap-2 px-4 py-2 bg-navy-900 border border-white/5 rounded-xl text-[10px] font-mono font-bold text-slate-400 justify-center">
-            <div className="w-1.5 h-1.5 rounded-full bg-cyber-purple animate-ping" />
-            LOADING NEXT TOPIC IN {countdownTransition} SECONDS...
-          </div>
+          {db && studentInfo ? (
+            <div className="flex items-center gap-2 px-4 py-2 bg-navy-900 border border-white/5 rounded-xl text-[10px] font-mono font-bold text-slate-400 justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-cyber-purple animate-ping" />
+              WAITING FOR TEACHER TO START NEXT TOPIC...
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 px-4 py-2 bg-navy-900 border border-white/5 rounded-xl text-[10px] font-mono font-bold text-slate-400 justify-center">
+              <div className="w-1.5 h-1.5 rounded-full bg-cyber-purple animate-ping" />
+              LOADING NEXT TOPIC IN {countdownTransition} SECONDS...
+            </div>
+          )}
         </div>
       </div>
     );
@@ -453,9 +463,20 @@ Each question must have 4 meaningful answer options and one correct answer. Retu
             Topic Evaluation: <span className="text-accent-300 font-semibold">{topicName}</span>
           </p>
         </div>
-        <div className={`flex items-center gap-2 px-4 py-2 bg-navy-950 border border-white/5 rounded-xl text-base font-mono font-bold ${timerColor} shadow-inner`}>
-          <Clock size={16} />
-          <span>{formatTime(timeLeft)}</span>
+        <div className="flex items-center gap-3">
+          {db && !studentInfo && (
+            <button
+              type="button"
+              onClick={onNext}
+              className="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-error/15 hover:bg-error/25 text-error border border-error/20 cursor-pointer transition-all duration-200"
+            >
+              Skip Quiz & Advance
+            </button>
+          )}
+          <div className={`flex items-center gap-2 px-4 py-2 bg-navy-950 border border-white/5 rounded-xl text-base font-mono font-bold ${timerColor} shadow-inner`}>
+            <Clock size={16} />
+            <span>{formatTime(timeLeft)}</span>
+          </div>
         </div>
       </div>
 

@@ -8,7 +8,8 @@ import Classroom from './components/Classroom';
 import Quiz from './components/Quiz';
 import Results from './components/Results';
 import { Flame } from 'lucide-react';
-import { auth, signInWithGoogle, signOutUser } from './firebase';
+import { auth, signInWithGoogle, signOutUser, db } from './firebase';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 const INITIAL_TOKENS = [
   {
@@ -28,7 +29,13 @@ const INITIAL_TOKENS = [
 ];
 
 function App() {
-  const [currentScreen, setCurrentScreen] = useState('home');
+  const [currentScreen, setCurrentScreen] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('session') || params.has('code')) {
+      return 'student-join';
+    }
+    return 'home';
+  });
   const [classData, setClassData] = useState(null);
   const [studentInfo, setStudentInfo] = useState(null);
   const [sessionTokens, setSessionTokens] = useState(INITIAL_TOKENS);
@@ -49,6 +56,34 @@ function App() {
     });
     return () => unsubscribe();
   }, []);
+
+  // Listen to Firestore session state for student auto-navigation
+  useEffect(() => {
+    if (!db || !classData?.sessionCode || !studentInfo) return;
+
+    const sessionDocRef = doc(db, "sessions", classData.sessionCode);
+    const unsubscribe = onSnapshot(sessionDocRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        
+        if (data.currentTopicIndex !== undefined && data.currentTopicIndex !== currentTopicIndex) {
+          setCurrentTopicIndex(data.currentTopicIndex);
+        }
+        
+        if (data.status === 'waiting') {
+          setCurrentScreen('waiting-room');
+        } else if (data.status === 'teaching') {
+          setCurrentScreen('classroom');
+        } else if (data.status === 'quiz') {
+          setCurrentScreen('quiz');
+        } else if (data.status === 'results') {
+          setCurrentScreen('results');
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [classData?.sessionCode, studentInfo, currentTopicIndex]);
 
   const handleLogin = async () => {
     // Instant login bypass to prevent Firebase Key issues from blocking development
@@ -94,16 +129,25 @@ function App() {
     }));
   }, []);
 
-  const handleStudentJoin = (info) => {
-    const token = info.studentId + '_' + Date.now();
+  const handleStudentJoin = (info, fetchedClassData = null) => {
+    if (fetchedClassData) {
+      setClassData(fetchedClassData);
+    }
+    const token = info.sessionToken || (info.studentId + '_' + Date.now());
     const enrichedInfo = { 
       ...info, 
       sessionToken: token,
-      strikeCount: 0,
-      scores: [null, null, null, null, null, null]
+      strikeCount: info.strikeCount || 0,
+      scores: info.scores || [null, null, null, null, null, null]
     };
     setStudentInfo(enrichedInfo);
-    setSessionTokens((prev) => [...prev, enrichedInfo]);
+    setSessionTokens((prev) => {
+      const exists = prev.some((t) => t.studentId === info.studentId);
+      if (exists) {
+        return prev.map((t) => t.studentId === info.studentId ? enrichedInfo : t);
+      }
+      return [...prev, enrichedInfo];
+    });
   };
 
   const handleRejoin = (studentId) => {
@@ -140,11 +184,22 @@ function App() {
       if (!prev) return null;
       const nextScores = [...(prev.scores || [null, null, null, null, null, null])];
       nextScores[currentTopicIndex] = results.score;
-      return {
+      
+      const updatedInfo = {
         ...prev,
         strikeCount: newStrikeVal,
         scores: nextScores
       };
+
+      // Write student scores to Firestore if database is online
+      if (db && classData?.sessionCode && prev.studentId) {
+        updateDoc(doc(db, "sessions", classData.sessionCode, "students", prev.studentId), {
+          scores: nextScores,
+          strikeCount: newStrikeVal
+        }).catch(err => console.error("Firestore student scores update failed:", err));
+      }
+
+      return updatedInfo;
     });
 
     setStrikeCount(newStrikeVal);
@@ -203,10 +258,26 @@ function App() {
   const handleQuizNext = () => {
     const totalTopics = classData?.topics?.length || 6;
     if (currentTopicIndex < totalTopics - 1) {
-      setCurrentTopicIndex((prev) => prev + 1);
+      const nextTopic = currentTopicIndex + 1;
+      setCurrentTopicIndex(nextTopic);
       setCurrentScreen('classroom');
+
+      // If teacher, update Firestore status
+      if (db && classData?.sessionCode && !studentInfo) {
+        updateDoc(doc(db, "sessions", classData.sessionCode), {
+          status: 'teaching',
+          currentTopicIndex: nextTopic
+        }).catch(err => console.error("Firestore next topic transition failed:", err));
+      }
     } else {
       setCurrentScreen('results');
+
+      // If teacher, update Firestore status
+      if (db && classData?.sessionCode && !studentInfo) {
+        updateDoc(doc(db, "sessions", classData.sessionCode), {
+          status: 'results'
+        }).catch(err => console.error("Firestore results transition failed:", err));
+      }
     }
   };
 
@@ -285,6 +356,7 @@ function App() {
             onSaveElevenLabsApiKey={handleSaveElevenLabsApiKey}
             onNext={() => navigate('quiz')}
             onExplanationReady={handleTopicExplanationReady}
+            studentInfo={studentInfo}
           />
         );
       case 'quiz':
@@ -296,6 +368,7 @@ function App() {
             apiKey={apiKey}
             onNext={handleQuizNext}
             onQuizResults={handleQuizResults}
+            studentInfo={studentInfo}
           />
         );
       case 'results':

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { db } from '../firebase';
+import { doc, updateDoc } from 'firebase/firestore';
 import {
   Play,
   Pause,
@@ -99,6 +101,7 @@ export default function Classroom({
   onSaveElevenLabsApiKey,
   currentTopicIndex = 0,
   onExplanationReady,
+  studentInfo,
 }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -312,10 +315,15 @@ export default function Classroom({
     return () => clearInterval(timer);
   }, [timeLeft, loading, topicComplete, handleTopicComplete]);
 
-  // 4. Count down auto-transition after teaching completes
+  // 4. Count down auto-transition after teaching completes (Teacher only)
   useEffect(() => {
-    if (!topicComplete) return;
+    if (!topicComplete || studentInfo) return;
     if (transitionCountdown <= 0) {
+      if (db && classData?.sessionCode) {
+        updateDoc(doc(db, "sessions", classData.sessionCode), {
+          status: 'quiz'
+        }).catch(err => console.error("Firestore auto status update failed:", err));
+      }
       onNext();
       return;
     }
@@ -323,7 +331,16 @@ export default function Classroom({
       setTransitionCountdown((c) => c - 1);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [topicComplete, transitionCountdown, onNext]);
+  }, [topicComplete, transitionCountdown, onNext, studentInfo, classData?.sessionCode]);
+
+  const handleNext = () => {
+    if (db && classData?.sessionCode && !studentInfo) {
+      updateDoc(doc(db, "sessions", classData.sessionCode), {
+        status: 'quiz'
+      }).catch(err => console.error("Firestore status update to quiz failed:", err));
+    }
+    onNext();
+  };
 
   // 5. TTS speech controls
   const fallbackSpeakParagraph = (index) => {
@@ -809,20 +826,27 @@ export default function Classroom({
                 <p className="text-slate-500 text-sm max-w-sm mb-6 leading-relaxed">
                   Excellent work listening to this topic. The next quiz will use the explanation you just reviewed.
                 </p>
-                <div className="flex flex-col sm:flex-row items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={onNext}
-                    className="btn-primary flex items-center justify-center gap-2 text-sm !px-6 !py-2.5"
-                  >
-                    Start Quiz
-                    <ChevronRight size={15} />
-                  </button>
+                {studentInfo ? (
                   <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 font-mono">
-                    <Clock size={14} className="text-accent-500 animate-spin" />
-                    AUTO START IN {transitionCountdown}S
+                    <Clock size={14} className="text-accent-500 animate-pulse" />
+                    WAITING FOR TEACHER TO START QUIZ
                   </div>
-                </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleNext}
+                      className="btn-primary flex items-center justify-center gap-2 text-sm !px-6 !py-2.5"
+                    >
+                      Start Quiz
+                      <ChevronRight size={15} />
+                    </button>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 font-mono">
+                      <Clock size={14} className="text-accent-500 animate-spin" />
+                      AUTO START IN {transitionCountdown}S
+                    </div>
+                  </div>
+                )}
               </div>
             ) : !startedTeaching ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 animate-slide-up px-4">
@@ -930,58 +954,60 @@ export default function Classroom({
                     </span>
                   </div>
 
-                  {/* Playback action items */}
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={handlePrevParagraph}
-                      disabled={currentParagraphIndex === 0}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 text-slate-500 bg-white hover:bg-slate-50 transition-all duration-200 disabled:opacity-40 disabled:hover:bg-white cursor-pointer"
-                      title="Previous Paragraph"
-                    >
-                      <SkipForward size={14} className="rotate-180" />
-                    </button>
+                  {/* Playback action items (Teacher only) */}
+                  {!studentInfo && (
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handlePrevParagraph}
+                        disabled={currentParagraphIndex === 0}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 text-slate-500 bg-white hover:bg-slate-50 transition-all duration-200 disabled:opacity-40 disabled:hover:bg-white cursor-pointer"
+                        title="Previous Paragraph"
+                      >
+                        <SkipForward size={14} className="rotate-180" />
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={handlePlayPause}
-                      className="w-10 h-10 rounded-full flex items-center justify-center bg-accent-500 text-white hover:scale-105 transition-all duration-200 shadow-md border-none cursor-pointer"
-                      title={isPlaying ? 'Pause Speech' : 'Play Speech'}
-                    >
-                      {isPlaying ? <Pause size={15} fill="white" /> : <Play size={15} fill="white" className="ml-0.5" />}
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handlePlayPause}
+                        className="w-10 h-10 rounded-full flex items-center justify-center bg-accent-500 text-white hover:scale-105 transition-all duration-200 shadow-md border-none cursor-pointer"
+                        title={isPlaying ? 'Pause Speech' : 'Play Speech'}
+                      >
+                        {isPlaying ? <Pause size={15} fill="white" /> : <Play size={15} fill="white" className="ml-0.5" />}
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={handleReplayParagraph}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 text-slate-500 bg-white hover:bg-slate-50 transition-all duration-200 cursor-pointer"
-                      title="Replay Paragraph"
-                    >
-                      <RotateCcw size={14} />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handleReplayParagraph}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 text-slate-500 bg-white hover:bg-slate-50 transition-all duration-200 cursor-pointer"
+                        title="Replay Paragraph"
+                      >
+                        <RotateCcw size={14} />
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={handleNextParagraph}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 text-slate-500 bg-white hover:bg-slate-50 transition-all duration-200 cursor-pointer"
-                      title="Skip Paragraph"
-                    >
-                      <SkipForward size={14} />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={handleNextParagraph}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center border border-slate-200 text-slate-500 bg-white hover:bg-slate-50 transition-all duration-200 cursor-pointer"
+                        title="Skip Paragraph"
+                      >
+                        <SkipForward size={14} />
+                      </button>
 
-                    <button
-                      type="button"
-                      onClick={handleMuteToggle}
-                      className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all duration-200 cursor-pointer ${
-                        isMuted 
-                          ? 'border-error/20 bg-error/5 text-error hover:bg-error/10' 
-                          : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50'
-                      }`}
-                      title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
-                    >
-                      {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
-                    </button>
-                  </div>
+                      <button
+                        type="button"
+                        onClick={handleMuteToggle}
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center border transition-all duration-200 cursor-pointer ${
+                          isMuted 
+                            ? 'border-error/20 bg-error/5 text-error hover:bg-error/10' 
+                            : 'border-slate-200 text-slate-500 bg-white hover:bg-slate-50'
+                        }`}
+                        title={isMuted ? 'Unmute Audio' : 'Mute Audio'}
+                      >
+                        {isMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

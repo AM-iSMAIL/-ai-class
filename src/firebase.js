@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const hasFirebaseKeys = !!(
   import.meta.env.VITE_FIREBASE_API_KEY &&
@@ -13,6 +14,7 @@ console.log("Project ID loaded:", import.meta.env.VITE_FIREBASE_PROJECT_ID);
 
 let authInstance = null;
 let googleProviderInstance = null;
+let dbInstance = null;
 let isMock = false;
 
 if (hasFirebaseKeys) {
@@ -28,6 +30,7 @@ if (hasFirebaseKeys) {
     const app = initializeApp(firebaseConfig);
     authInstance = getAuth(app);
     googleProviderInstance = new GoogleAuthProvider();
+    dbInstance = getFirestore(app);
   } catch (err) {
     console.warn("Firebase initialization failed, switching to mock auth mode:", err);
     isMock = true;
@@ -61,6 +64,7 @@ const mockSignInWithGoogle = async () => {
 
 export const auth = isMock ? mockAuth : authInstance;
 export const googleProvider = isMock ? null : googleProviderInstance;
+export const db = isMock ? null : dbInstance;
 export const signInWithGoogle = async () => {
   if (isMock) {
     return mockSignInWithGoogle();

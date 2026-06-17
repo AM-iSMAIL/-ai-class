@@ -9,6 +9,8 @@ import {
   Timer,
   Shield,
 } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 
 const FAKE_STUDENTS = [
   { name: 'Priya Sharma', id: 'STU-2024-0108' },
@@ -21,18 +23,62 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
   const [secondsLeft, setSecondsLeft] = useState(TOTAL_SECONDS);
   const [locked, setLocked] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
+  const [onlineStudents, setOnlineStudents] = useState([]);
   const timerRef = useRef(null);
   const transitionTimerRef = useRef(null);
   const nextTimerRef = useRef(null);
   const testAudioRef = useRef(null);
 
-  // Build student list: current student + 2 fake students
-  const studentList = [
-    ...(studentInfo
-      ? [{ name: studentInfo.fullName, id: studentInfo.studentId, isSelf: true }]
-      : []),
-    ...FAKE_STUDENTS.map((s) => ({ ...s, isSelf: false })),
-  ];
+  // Listen to active student connections in Firestore
+  useEffect(() => {
+    if (!db || !classData?.sessionCode) return;
+    
+    const studentsRef = collection(db, "sessions", classData.sessionCode, "students");
+    const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
+      const list = [];
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        list.push({
+          name: data.fullName,
+          id: data.studentId,
+          isSelf: studentInfo && data.studentId === studentInfo.studentId
+        });
+      });
+      setOnlineStudents(list);
+    }, (err) => {
+      console.error("Firestore onSnapshot error:", err);
+    });
+
+    return () => unsubscribe();
+  }, [classData?.sessionCode, studentInfo]);
+
+  // Listen to session status for student auto-redirect
+  useEffect(() => {
+    if (!db || !classData?.sessionCode || !studentInfo || locked) return;
+
+    const sessionDocRef = doc(db, "sessions", classData.sessionCode);
+    const unsubscribe = onSnapshot(sessionDocRef, (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        if (data.status === 'teaching') {
+          setLocked(true);
+          onSessionLock();
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [classData?.sessionCode, studentInfo, locked, onSessionLock]);
+
+  const isOnline = !!db && !!classData?.sessionCode;
+  const studentList = isOnline 
+    ? onlineStudents 
+    : [
+        ...(studentInfo
+          ? [{ name: studentInfo.fullName, id: studentInfo.studentId, isSelf: true }]
+          : []),
+        ...FAKE_STUDENTS.map((s) => ({ ...s, isSelf: false })),
+      ];
 
   // Countdown timer
   useEffect(() => {
@@ -60,8 +106,13 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
     if (secondsLeft === 0 && !locked) {
       setLocked(true);
       onSessionLock();
+      if (db && classData?.sessionCode && !studentInfo) {
+        updateDoc(doc(db, "sessions", classData.sessionCode), {
+          status: 'teaching'
+        }).catch(err => console.error("Firestore session start failed:", err));
+      }
     }
-  }, [secondsLeft, locked, onSessionLock]);
+  }, [secondsLeft, locked, onSessionLock, classData?.sessionCode, studentInfo]);
 
   // Handle transition sequence when locked
   useEffect(() => {

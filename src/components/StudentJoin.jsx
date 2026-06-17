@@ -11,6 +11,8 @@ import {
   Lock,
   AlertTriangle,
 } from 'lucide-react';
+import { db } from '../firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export default function StudentJoin({
   onNext,
@@ -21,7 +23,10 @@ export default function StudentJoin({
 }) {
   const [fullName, setFullName] = useState('');
   const [studentId, setStudentId] = useState('');
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('session')?.toUpperCase() || params.get('code')?.toUpperCase() || '';
+  });
   const [error, setError] = useState('');
 
   // Rejoin state
@@ -31,7 +36,7 @@ export default function StudentJoin({
 
   const clearError = () => setError('');
 
-  const handleJoin = () => {
+  const handleJoin = async () => {
     if (!fullName.trim()) {
       setError('Please enter your full name.');
       return;
@@ -44,30 +49,97 @@ export default function StudentJoin({
       setError('Please enter the session code.');
       return;
     }
-    if (classData && code.toUpperCase() !== classData.sessionCode) {
-      setError('Invalid session code. Please check with your teacher.');
-      return;
-    }
 
-    onStudentJoin({
-      fullName: fullName.trim(),
-      studentId: studentId.trim(),
-      photoURL: null,
-    });
-    onNext();
+    const sessionCodeUpper = code.trim().toUpperCase();
+
+    if (db) {
+      try {
+        setError('');
+        const sessionDoc = await getDoc(doc(db, "sessions", sessionCodeUpper));
+        if (!sessionDoc.exists()) {
+          setError('Session not found. Please double check the code.');
+          return;
+        }
+
+        const sessionData = sessionDoc.data();
+        
+        // Check if session is locked
+        if (sessionData.status !== 'waiting') {
+          setError('This session has already started and is locked.');
+          return;
+        }
+
+        const token = studentId.trim() + '_' + Date.now();
+        const studentData = {
+          fullName: fullName.trim(),
+          studentId: studentId.trim(),
+          sessionToken: token,
+          strikeCount: 0,
+          scores: [null, null, null, null, null, null]
+        };
+
+        // Write student to Firestore under this session
+        await setDoc(doc(db, "sessions", sessionCodeUpper, "students", studentId.trim()), studentData);
+
+        // Update parent state
+        onStudentJoin(studentData, sessionData);
+        onNext();
+      } catch (err) {
+        console.error("Firestore student join failed:", err);
+        setError('Error connecting to database. Please try again.');
+      }
+    } else {
+      if (classData && sessionCodeUpper !== classData.sessionCode) {
+        setError('Invalid session code. Please check with your teacher.');
+        return;
+      }
+
+      onStudentJoin({
+        fullName: fullName.trim(),
+        studentId: studentId.trim(),
+        photoURL: null,
+      });
+      onNext();
+    }
   };
 
-  const handleRejoin = () => {
+  const handleRejoin = async () => {
     if (!rejoinId.trim()) {
       setRejoinError('Please enter your Student ID.');
       return;
     }
-    const found = onRejoin(rejoinId.trim());
-    if (found) {
-      setRejoinSuccess(true);
-      setTimeout(() => onNext(), 1200);
+    const studentIdClean = rejoinId.trim();
+
+    if (db) {
+      try {
+        setRejoinError('');
+        const sessionCodeUpper = code.trim().toUpperCase();
+        
+        // Check if student exists in Firestore
+        const studentDoc = await getDoc(doc(db, "sessions", sessionCodeUpper, "students", studentIdClean));
+        if (studentDoc.exists()) {
+          const studentData = studentDoc.data();
+          const sessionDoc = await getDoc(doc(db, "sessions", sessionCodeUpper));
+          const sessionData = sessionDoc.data();
+
+          onStudentJoin(studentData, sessionData);
+          setRejoinSuccess(true);
+          setTimeout(() => onNext(), 1200);
+        } else {
+          setRejoinError('No student record found for this Student ID in this session.');
+        }
+      } catch (err) {
+        console.error("Firestore rejoin failed:", err);
+        setRejoinError('Database error during rejoin.');
+      }
     } else {
-      setRejoinError('No session token found for this Student ID. Contact your teacher.');
+      const found = onRejoin(studentIdClean);
+      if (found) {
+        setRejoinSuccess(true);
+        setTimeout(() => onNext(), 1200);
+      } else {
+        setRejoinError('No session token found for this Student ID. Contact your teacher.');
+      }
     }
   };
 

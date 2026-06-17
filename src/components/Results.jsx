@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import {
   Download,
   Users,
@@ -8,12 +9,35 @@ import {
   BarChart3,
   Award,
 } from 'lucide-react';
+import { db } from '../firebase';
+import { collection, onSnapshot } from 'firebase/firestore';
 
 export default function Results({
   classData,
   sessionTokens = [],
   onRestart,
 }) {
+  const [liveStudents, setLiveStudents] = useState([]);
+
+  useEffect(() => {
+    if (!db || !classData?.sessionCode) return;
+
+    const studentsRef = collection(db, "sessions", classData.sessionCode, "students");
+    const unsubscribe = onSnapshot(studentsRef, (snapshot) => {
+      const list = [];
+      snapshot.forEach((doc) => {
+        list.push(doc.data());
+      });
+      setLiveStudents(list);
+    }, (err) => {
+      console.error("Firestore loading results failed:", err);
+    });
+
+    return () => unsubscribe();
+  }, [classData?.sessionCode]);
+
+  const activeTokens = db && classData?.sessionCode ? liveStudents : sessionTokens;
+
   const getStudentStats = (tok) => {
     const scores = tok.scores || [null, null, null, null, null, null];
     const totalScore = scores.reduce((sum, s) => sum + (s || 0), 0);
@@ -34,7 +58,7 @@ export default function Results({
     };
   };
 
-  const studentRows = sessionTokens.map((tok) => {
+  const studentRows = activeTokens.map((tok) => {
     const stats = getStudentStats(tok);
     return {
       ...tok,

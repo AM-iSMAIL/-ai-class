@@ -11,6 +11,8 @@ import {
   Share2,
   GraduationCap,
 } from 'lucide-react';
+import { db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 export default function TeacherSetup({ onNext, onClassData }) {
   const [title, setTitle] = useState('');
@@ -37,7 +39,7 @@ export default function TeacherSetup({ onNext, onClassData }) {
     return code;
   };
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
     const code = generateCode();
     setSessionCode(code);
 
@@ -47,6 +49,19 @@ export default function TeacherSetup({ onNext, onClassData }) {
       topics: topics.map((t) => t.trim()),
       duration,
     };
+
+    if (db) {
+      try {
+        await setDoc(doc(db, "sessions", code), {
+          ...sessionData,
+          status: 'waiting',
+          currentTopicIndex: 0,
+          createdAt: new Date()
+        });
+      } catch (err) {
+        console.error("Firestore session creation failed:", err);
+      }
+    }
 
     onClassData(sessionData);
     setSessionCreated(true);
