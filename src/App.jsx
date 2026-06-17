@@ -42,6 +42,19 @@ function App() {
   const [sessionLocked, setSessionLocked] = useState(false);
   const [user, setUser] = useState(null);
   
+  // Topic Coordination, API Key, and Strikes tracking
+  const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('classai_gemini_api_key') || '');
+  const [unsplashClientId, setUnsplashClientId] = useState(() => localStorage.getItem('classai_unsplash_client_id') || '');
+  const [elevenLabsApiKey, setElevenLabsApiKey] = useState(() => localStorage.getItem('classai_elevenlabs_api_key') || '');
+  const [strikeCount, setStrikeCount] = useState(0);
+  const [accumulatedQuizResults, setAccumulatedQuizResults] = useState({
+    score: 0,
+    total: 0,
+    answers: []
+  });
+  const [topicExplanations, setTopicExplanations] = useState({});
+  
   // Listen to Firebase Auth state
   useEffect(() => {
     if (!auth || typeof auth.onAuthStateChanged !== 'function') {
@@ -107,18 +120,7 @@ function App() {
     }
   };
 
-  // Topic Coordination, API Key, and Strikes tracking
-  const [currentTopicIndex, setCurrentTopicIndex] = useState(0);
-  const [apiKey, setApiKey] = useState(() => localStorage.getItem('classai_gemini_api_key') || '');
-  const [unsplashClientId, setUnsplashClientId] = useState(() => localStorage.getItem('classai_unsplash_client_id') || '');
-  const [elevenLabsApiKey, setElevenLabsApiKey] = useState(() => localStorage.getItem('classai_elevenlabs_api_key') || '');
-  const [strikeCount, setStrikeCount] = useState(0);
-  const [accumulatedQuizResults, setAccumulatedQuizResults] = useState({
-    score: 0,
-    total: 0,
-    answers: []
-  });
-  const [topicExplanations, setTopicExplanations] = useState({});
+
 
   const navigate = (screen) => setCurrentScreen(screen);
 
