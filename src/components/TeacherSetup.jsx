@@ -10,6 +10,10 @@ import {
   Eye,
   Share2,
   GraduationCap,
+  Mail,
+  MessageSquare,
+  Send,
+  X,
 } from 'lucide-react';
 import { db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -21,6 +25,8 @@ export default function TeacherSetup({ onNext, onClassData }) {
   const [sessionCreated, setSessionCreated] = useState(false);
   const [sessionCode, setSessionCode] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const handleTopicChange = (index, value) => {
     setTopics((prev) => {
@@ -73,6 +79,32 @@ export default function TeacherSetup({ onNext, onClassData }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleShareClick = async () => {
+    const joinLink = `${window.location.origin}${window.location.pathname}?session=${sessionCode}`;
+    const shareText = `Join my live AI-powered class session "${title}"!\nCode: ${sessionCode}\nLink: ${joinLink}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `ClassAI — ${title}`,
+          text: `Join my live class session "${title}"!`,
+          url: joinLink
+        });
+        return;
+      } catch (err) {
+        console.log("Web Share API cancelled or not supported, falling back to modal:", err);
+      }
+    }
+    setShowShareModal(true);
+  };
+
+  const handleCopyLink = () => {
+    const joinLink = `${window.location.origin}${window.location.pathname}?session=${sessionCode}`;
+    navigator.clipboard.writeText(joinLink);
+    setCopiedLink(true);
+    setTimeout(() => setCopiedLink(false), 2000);
+  };
+
   const isValid =
     title.trim().length > 0 &&
     topics.every((t) => t.trim().length > 0);
@@ -80,114 +112,200 @@ export default function TeacherSetup({ onNext, onClassData }) {
   // ─── Post-creation: show session code ───────────────────
   if (sessionCreated) {
     return (
-      <div className="flex-1 flex items-center justify-center px-4 py-12 relative">
-        <div className="orb orb-green w-80 h-80 -top-24 -right-16" />
-        <div className="orb orb-purple w-72 h-72 -bottom-20 -left-12" />
+      <>
+        <div className="flex-1 flex items-center justify-center px-4 py-12 relative">
+          <div className="orb orb-green w-80 h-80 -top-24 -right-16" />
+          <div className="orb orb-purple w-72 h-72 -bottom-20 -left-12" />
 
-        <div className="w-full max-w-lg relative z-10">
-          {/* Header */}
-          <div className="text-center mb-8 animate-slide-up">
-            <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center bg-gradient-to-br from-cyber-green/20 to-accent-500/20 border border-cyber-green/20">
-              <Check size={30} className="text-cyber-green" />
-            </div>
-            <h1
-              className="text-3xl sm:text-4xl font-bold text-white mb-2 tracking-tight"
-              style={{ fontFamily: 'var(--font-display)' }}
-            >
-              Session{' '}
-              <span className="bg-gradient-to-r from-cyber-green to-accent-400 bg-clip-text text-transparent">
-                Created!
-              </span>
-            </h1>
-            <p className="text-slate-400">
-              Share the code below with your students
-            </p>
-          </div>
-
-          {/* Session Code Card */}
-          <div className="glass p-8 text-center mb-6 animate-slide-up gradient-border">
-            <p className="text-xs font-semibold text-accent-400 uppercase tracking-widest mb-4">
-              Session Code
-            </p>
-            <div
-              className="text-5xl sm:text-6xl font-bold tracking-[0.35em] text-white mb-5 glow-text"
-              style={{ fontFamily: 'var(--font-mono)' }}
-            >
-              {sessionCode}
-            </div>
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer border-none bg-accent-500/15 text-accent-300 hover:bg-accent-500/25"
-            >
-              {copied ? (
-                <>
-                  <Check size={15} />
-                  Copied!
-                </>
-              ) : (
-                <>
-                  <Copy size={15} />
-                  Copy Code
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Session Summary */}
-          <div className="glass-light p-5 mb-6 animate-slide-up">
-            <div className="flex items-center gap-2 text-sm font-semibold text-white mb-3">
-              <Sparkles size={14} className="text-accent-400" />
-              Session Details
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="text-slate-400">Title</span>
-                <span className="text-white font-medium">{title}</span>
+          <div className="w-full max-w-lg relative z-10">
+            {/* Header */}
+            <div className="text-center mb-8 animate-slide-up">
+              <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center bg-gradient-to-br from-cyber-green/20 to-accent-500/20 border border-cyber-green/20">
+                <Check size={30} className="text-cyber-green" />
               </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Topics</span>
-                <span className="text-white font-medium">6 topics</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Duration per topic</span>
-                <span className="text-white font-medium">{duration} min</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-400">Total duration</span>
-                <span className="text-accent-400 font-bold">{duration * 6} min</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="space-y-3 animate-slide-up">
-            <button
-              type="button"
-              onClick={onNext}
-              className="btn-primary w-full flex items-center justify-center gap-2 text-base"
-            >
-              <Eye size={18} />
-              View as Teacher
-              <ChevronRight size={18} />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleCopy}
-              className="btn-secondary w-full flex items-center justify-center gap-2.5 text-base"
-            >
-              <Share2 size={17} />
-              <span>
-                Share Join Link:{' '}
-                <span className="font-mono font-bold text-accent-300 tracking-wider">
-                  {sessionCode}
+              <h1
+                className="text-3xl sm:text-4xl font-bold text-white mb-2 tracking-tight"
+                style={{ fontFamily: 'var(--font-display)' }}
+              >
+                Session{' '}
+                <span className="bg-gradient-to-r from-cyber-green to-accent-400 bg-clip-text text-transparent">
+                  Created!
                 </span>
-              </span>
-            </button>
+              </h1>
+              <p className="text-slate-400">
+                Share the code below with your students
+              </p>
+            </div>
+
+            {/* Session Code Card */}
+            <div className="glass p-8 text-center mb-6 animate-slide-up gradient-border">
+              <p className="text-xs font-semibold text-accent-400 uppercase tracking-widest mb-4">
+                Session Code
+              </p>
+              <div
+                className="text-5xl sm:text-6xl font-bold tracking-[0.35em] text-white mb-5 glow-text"
+                style={{ fontFamily: 'var(--font-mono)' }}
+              >
+                {sessionCode}
+              </div>
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="btn-secondary inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer border-none bg-accent-500/15 text-accent-300 hover:bg-accent-500/25"
+              >
+                {copied ? (
+                  <>
+                    <Check size={15} />
+                    Copied!
+                  </>
+                ) : (
+                  <>
+                    <Copy size={15} />
+                    Copy Code
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Session Summary */}
+            <div className="glass-light p-5 mb-6 animate-slide-up">
+              <div className="flex items-center gap-2 text-sm font-semibold text-white mb-3">
+                <Sparkles size={14} className="text-accent-400" />
+                Session Details
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Title</span>
+                  <span className="text-white font-medium">{title}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Topics</span>
+                  <span className="text-white font-medium">6 topics</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Duration per topic</span>
+                  <span className="text-white font-medium">{duration} min</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Total duration</span>
+                  <span className="text-accent-400 font-bold">{duration * 6} min</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3 animate-slide-up">
+              <button
+                type="button"
+                onClick={onNext}
+                className="btn-primary w-full flex items-center justify-center gap-2 text-base"
+              >
+                <Eye size={18} />
+                View as Teacher
+                <ChevronRight size={18} />
+              </button>
+
+              <button
+                type="button"
+                onClick={handleShareClick}
+                className="btn-secondary w-full flex items-center justify-center gap-2.5 text-base"
+              >
+                <Share2 size={17} />
+                <span>
+                  Share Join Link:{' '}
+                  <span className="font-mono font-bold text-accent-300 tracking-wider">
+                    {sessionCode}
+                  </span>
+                </span>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+
+        {/* Share Modal Dialog overlay */}
+        {showShareModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy-950/80 backdrop-blur-md animate-fade-in px-4">
+            <div className="glass p-6 max-w-sm w-full relative z-10 animate-slide-up border border-white/10 shadow-2xl">
+              <button
+                type="button"
+                onClick={() => setShowShareModal(false)}
+                className="absolute top-4 right-4 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border-none cursor-pointer transition-all duration-200"
+              >
+                <X size={15} />
+              </button>
+
+              <h2 className="text-xl font-bold text-white mb-1.5 font-display flex items-center gap-2">
+                <Share2 size={18} className="text-accent-400" />
+                Invite Students
+              </h2>
+              <p className="text-slate-400 text-xs leading-relaxed mb-6">
+                Select an option below to share the interactive session link with your class.
+              </p>
+
+              <div className="space-y-3">
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Join my live class "${title}"!\nCode: ${sessionCode}\nLink: ${window.location.origin}${window.location.pathname}?session=${sessionCode}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-cyber-green/30 hover:bg-cyber-green/5 text-white cursor-pointer no-underline flex"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-cyber-green/10 flex items-center justify-center text-cyber-green shrink-0">
+                    <MessageSquare size={16} className="fill-cyber-green/10" />
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold block">Share on WhatsApp</span>
+                    <span className="text-[10px] text-slate-400">Send directly to your student groups</span>
+                  </div>
+                </a>
+
+                <a
+                  href={`mailto:?subject=${encodeURIComponent(`Join ClassAI Session: ${title}`)}&body=${encodeURIComponent(`Join my live class "${title}"!\n\nSession Code: ${sessionCode}\nLink: ${window.location.origin}${window.location.pathname}?session=${sessionCode}`)}`}
+                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-accent-500/30 hover:bg-accent-500/5 text-white cursor-pointer no-underline flex"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-accent-500/10 flex items-center justify-center text-accent-400 shrink-0">
+                    <Mail size={16} />
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold block">Email Invitation</span>
+                    <span className="text-[10px] text-slate-400">Share via Gmail, Outlook, or mail client</span>
+                  </div>
+                </a>
+
+                <a
+                  href={`https://t.me/share/url?url=${encodeURIComponent(`${window.location.origin}${window.location.pathname}?session=${sessionCode}`)}&text=${encodeURIComponent(`Join my live class session "${title}"! (Code: ${sessionCode})`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-cyber-purple/30 hover:bg-cyber-purple/5 text-white cursor-pointer no-underline flex"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-cyber-purple/10 flex items-center justify-center text-cyber-purple shrink-0">
+                    <Send size={16} />
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold block">Share on Telegram</span>
+                    <span className="text-[10px] text-slate-400">Send to channels or classroom chats</span>
+                  </div>
+                </a>
+
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="w-full text-left p-3.5 rounded-xl flex items-center gap-3 transition-all duration-300 border border-transparent glass-light hover:border-white/10 hover:bg-white/5 text-white cursor-pointer flex"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center text-slate-300 shrink-0">
+                    {copiedLink ? <Check size={16} className="text-cyber-green" /> : <Copy size={16} />}
+                  </div>
+                  <div>
+                    <span className="text-sm font-semibold block">
+                      {copiedLink ? 'Copied!' : 'Copy Session Link'}
+                    </span>
+                    <span className="text-[10px] text-slate-400">Copy URL with embedded room code</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
     );
   }
 
