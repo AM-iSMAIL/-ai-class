@@ -57,16 +57,14 @@ export default function TeacherSetup({ onNext, onClassData }) {
     };
 
     if (db) {
-      try {
-        await setDoc(doc(db, "sessions", code), {
-          ...sessionData,
-          status: 'waiting',
-          currentTopicIndex: 0,
-          createdAt: new Date()
-        });
-      } catch (err) {
+      setDoc(doc(db, "sessions", code), {
+        ...sessionData,
+        status: 'waiting',
+        currentTopicIndex: 0,
+        createdAt: new Date()
+      }).catch((err) => {
         console.error("Firestore session creation failed:", err);
-      }
+      });
     }
 
     onClassData(sessionData);
