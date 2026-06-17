@@ -430,6 +430,13 @@ export default function Classroom({
     }
   };
 
+  // Auto start teaching when loading completes
+  useEffect(() => {
+    if (!loading && paragraphs.length > 0 && !startedTeaching) {
+      speakParagraph(0);
+    }
+  }, [loading, paragraphs, startedTeaching]);
+
   const handlePlayPause = () => {
     if (isPlaying) {
       setIsPlaying(false);
