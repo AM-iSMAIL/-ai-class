@@ -73,9 +73,9 @@ export default function Results({
   const averageClassScore =
     studentRows.length > 0
       ? (
-          studentRows.reduce((sum, r) => sum + r.totalScore, 0) /
-          studentRows.length
-        ).toFixed(1)
+        studentRows.reduce((sum, r) => sum + r.totalScore, 0) /
+        studentRows.length
+      ).toFixed(1)
       : '0.0';
 
   const downloadReport = () => {
@@ -118,8 +118,7 @@ export default function Results({
     link.href = url;
     link.setAttribute(
       'download',
-      `${classData?.title || 'ClassAI'}_Attendance_Report_${
-        classData?.sessionCode || 'Code'
+      `${classData?.title || 'ClassAI'}_Attendance_Report_${classData?.sessionCode || 'Code'
       }.csv`
     );
     document.body.appendChild(link);
@@ -204,7 +203,7 @@ export default function Results({
                 Attendance & Performance Log
               </h2>
             </div>
-            
+
             {/* Status Summary Banner */}
             <div className="text-xs text-slate-600 font-mono bg-navy-900 border border-slate-200/60 px-3 py-1.5 rounded-lg font-medium">
               Class Summary: <span className="text-success font-bold">{presentCount} Present</span>,{' '}
@@ -233,13 +232,12 @@ export default function Results({
                 {studentRows.map((row, idx) => {
                   const isUser = tok => tok.studentId === row.studentId && tok.sessionToken && !tok.sessionToken.includes('_mock');
                   const isActiveUser = isUser(row);
-                  
+
                   return (
                     <tr
                       key={idx}
-                      className={`hover:bg-slate-50/50 transition-colors duration-150 ${
-                        isActiveUser ? 'bg-accent-500/5' : ''
-                      }`}
+                      className={`hover:bg-slate-50/50 transition-colors duration-150 ${isActiveUser ? 'bg-accent-500/5' : ''
+                        }`}
                     >
                       {/* Name */}
                       <td className="py-4 px-4 font-semibold text-slate-800 truncate max-w-[150px]">
@@ -266,8 +264,8 @@ export default function Results({
                             score === 3
                               ? 'text-success font-bold'
                               : score > 0
-                              ? 'text-slate-700 font-semibold'
-                              : 'text-error font-bold';
+                                ? 'text-slate-700 font-semibold'
+                                : 'text-error font-bold';
                         }
                         return (
                           <td
@@ -287,11 +285,10 @@ export default function Results({
                       {/* Status */}
                       <td className="py-4 px-4 text-center">
                         <span
-                          className={`inline-flex items-center gap-1.5 border px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider font-mono ${
-                            row.isPresent
+                          className={`inline-flex items-center gap-1.5 border px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider font-mono ${row.isPresent
                               ? 'bg-success/10 border-success/30 text-success'
                               : 'bg-error/10 border-error/30 text-error animate-pulse'
-                          }`}
+                            }`}
                         >
                           {row.isPresent ? (
                             <CheckCircle2 size={11} />
@@ -307,7 +304,7 @@ export default function Results({
               </tbody>
             </table>
           </div>
-          
+
           {studentRows.length === 0 && (
             <div className="text-center py-8 text-slate-500 text-sm font-medium">
               No students recorded in this session.

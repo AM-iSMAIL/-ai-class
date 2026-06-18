@@ -1,179 +1,110 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { db } from '../firebase';
-import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import {
-  Play,
-  Pause,
-  RotateCcw,
-  SkipForward,
-  Volume2,
-  VolumeX,
-  Key,
-  Check,
-  ChevronRight,
-  BookOpen,
-  Clock,
-  Sparkles,
-  AlertTriangle,
-  Lightbulb,
-  Image,
+  Video,
+  VideoOff,
   Mic,
   MicOff,
-  Search,
-  PlusCircle,
-  Video,
-  MonitorPlay,
-  Layers,
-  HelpCircle,
+  PhoneOff,
+  Users,
+  MessageSquare,
+  Send,
+  Check,
+  Sparkles,
+  AlertTriangle,
+  Volume2,
+  VolumeX,
+  X,
+  Play,
+  Pause,
 } from 'lucide-react';
 
-// Fallback high-quality lecture slides if Gemini API key is missing or fails
-const getFallbackSlides = (topic) => {
+// Fallback high-quality curated lecture segments with media captions if Gemini is offline
+const getCuratedSegments = (topic) => {
   const lower = topic.toLowerCase();
   
   if (lower.includes('neural') || lower.includes('network') || lower.includes('perceptron') || lower.includes('neuron')) {
     return [
       {
-        title: "Introduction to Artificial Neural Networks",
-        bulletPoints: [
-          "Inspired by biological networks of neurons in the human brain",
-          "Core architecture: Input layer, hidden layers, and output layer",
-          "Signal transmission governed by connection weights and node biases"
-        ],
-        speakerNotes: `Welcome to our session on neural networks. Today, we will explore how computational graphs model complex functions. Just as biological brains transmit signals via synapses, artificial networks use weighted connections to process information.`,
-        visualDescription: "A layer-based neural network diagram showing input nodes feeding into a hidden neuron with weights.",
-        imagePrompt: "A futuristic glowing network of interconnected nodes and synapses, digital art style."
+        title: "Structure of Artificial Neurons",
+        lectureText: "Hello class, welcome to today's session! Let's start by looking at artificial neurons. Just like the neurons in your brain, an artificial neuron receives input values, multiplies them by connection weights, adds a bias, and passes them through an activation function to generate an output. Let's look at this diagram illustrating this core structure.",
+        mediaType: "image",
+        mediaQuery: "artificial neural network node mathematical model",
+        caption: "A diagram of an artificial neuron: multiplying inputs by weights, adding bias, and passing through an activation function.",
+        keyTakeaway: "Artificial neurons calculate weighted sums plus bias, applying an activation function."
       },
       {
-        title: "The Mathematical Model of a Neuron",
-        bulletPoints: [
-          "Linear combination: Computing the weighted sum of inputs plus bias",
-          "Activation function: Introducing non-linearity into the network",
-          "Enables modeling of complex decision boundaries beyond linear cuts"
-        ],
-        speakerNotes: "Let's examine the mathematical mechanics of a single artificial neuron. We calculate the sum of all inputs multiplied by their weights, add a bias term, and pass the result through an activation function to introduce non-linearity.",
-        visualDescription: "An equation diagram summing inputs x_i * w_i plus bias, feeding into activation f(z).",
-        imagePrompt: "Mathematical formula schematic of neuron activation function on a dark digital board."
+        title: "The Role of Activation Functions",
+        lectureText: "Now, why do we need activation functions? Without them, a neural network is just a giant linear formula, which can't learn complex curves or patterns. Activation functions like ReLU and Sigmoid introduce non-linearity, allowing the model to fit complex data boundaries. Watch this short video explaining how activation functions shape neural outputs.",
+        mediaType: "video",
+        mediaQuery: "activation functions relu sigmoid deep learning",
+        caption: "A process animation showing how activation functions introduce non-linearity to map curves.",
+        keyTakeaway: "Activation functions introduce non-linearity to model complex decision boundaries."
       },
       {
-        title: "Training Networks: The Feedforward Process",
-        bulletPoints: [
-          "Forward propagation: Passing inputs through layers to compute output",
-          "Loss function: Quantifying prediction error against target labels",
-          "Common error metrics: Mean Squared Error (MSE) and Cross-Entropy"
-        ],
-        speakerNotes: "During forward propagation, data flows from the input layer through the hidden layers to the output. We evaluate the final predictions using a loss function, which quantifies the discrepancy between our model's predictions and actual targets.",
-        visualDescription: "A flowchart showing forward data flow from inputs through hidden layers to a loss node.",
-        imagePrompt: "A sleek visualization of data packets flowing left-to-right through layer grids."
-      },
-      {
-        title: "Learning and Optimization: Backpropagation",
-        bulletPoints: [
-          "Gradient Descent: Iteratively adjusting weights to minimize loss",
-          "The Chain Rule: Calculating partial derivatives of loss with respect to weights",
-          "Learning rate: Pacing parameter determining size of gradient steps"
-        ],
-        speakerNotes: "To train the network, we compute the gradient of the loss function using the calculus chain rule, propagating backward. We then adjust each weight in the direction that minimizes loss, guided by the learning rate.",
-        visualDescription: "A gradient descent cost function curve showing a ball rolling down to the global minimum.",
-        imagePrompt: "A dynamic 3D landscape diagram illustrating optimization paths to a valley."
+        title: "Backpropagation and Optimization",
+        lectureText: "Finally, how does the network learn? Through backpropagation. It calculates the error at the output using a loss function, and propagates the gradients backwards using the chain rule. Then, gradient descent adjusts the weights to minimize error. Let's view this visualization of gradient descent rolling down a cost landscape to find the minimum error.",
+        mediaType: "image",
+        mediaQuery: "gradient descent landscape optimization curve",
+        caption: "A topological cost landscape visualization with a gradient vector path leading down to the global minimum.",
+        keyTakeaway: "Backpropagation propagates error gradients backward to update weights via gradient descent."
       }
     ];
   }
 
-  if (lower.includes('backprop') || lower.includes('gradient') || lower.includes('train') || lower.includes('optimi') || lower.includes('descent')) {
+  if (lower.includes('supervised') || lower.includes('regression') || lower.includes('classif')) {
     return [
       {
-        title: "Foundations of Gradient Descent",
-        bulletPoints: [
-          "Optimization objective: Finding weight configurations that minimize error",
-          "Loss landscapes: Conceptualizing error as a high-dimensional surface",
-          "Steepest descent direction: Moving opposite to the gradient vector"
-        ],
-        speakerNotes: `Today, we dive into how neural networks learn. Optimization algorithms seek to minimize a loss function. By visualizing this function as a landscape, we can use gradient vectors to find the steepest path downhill.`,
-        visualDescription: "A 3D surface plot representing a loss landscape with peaks and valleys.",
-        imagePrompt: "A colorful 3D topological map showcasing optimization paths, technological layout."
+        title: "Introduction to Supervised Learning",
+        lectureText: "Welcome class! Today we are discussing Supervised Learning. This is the most common form of machine learning, where we train an algorithm using labeled training data. Each example contains an input and its corresponding correct output target. Let's see an overview diagram of how training data shapes the mapping function.",
+        mediaType: "image",
+        mediaQuery: "supervised machine learning training data diagram",
+        caption: "A conceptual diagram showing training inputs mapped to target labels to train a classifier.",
+        keyTakeaway: "Supervised learning maps inputs to outputs using labeled training examples."
       },
       {
-        title: "The Chain Rule & Backpropagation",
-        bulletPoints: [
-          "Computing gradients in layered computational graphs",
-          "Backward pass: Transmitting error signals from output back to input",
-          "Calculating partial derivatives of loss for individual parameters"
-        ],
-        speakerNotes: "Backpropagation is simply an application of the calculus chain rule. By working backwards from the output, we calculate how small changes in each weight affect the final loss, allowing systematic updates.",
-        visualDescription: "A computational graph diagram with forward and backward derivative arrows.",
-        imagePrompt: "Abstract derivative formulas floating over a structured network diagram, blue neon style."
+        title: "Classification vs Regression",
+        lectureText: "Supervised learning is divided into classification, which predicts discrete categories like spam versus inbox, and regression, which predicts continuous values like stock prices or temperature. Let's watch this quick visual breakdown comparing classification boundaries against regression lines.",
+        mediaType: "video",
+        mediaQuery: "classification vs regression machine learning",
+        caption: "An animation showing classification boundaries mapping categories vs a regression line fitting continuous data.",
+        keyTakeaway: "Classification predicts discrete categories, while regression predicts continuous numerical values."
       },
       {
-        title: "Learning Rates & Gradient Step Sizes",
-        bulletPoints: [
-          "Defining step size: Balancing training speed and convergence stability",
-          "Underfitting vs Overfitting: Consequences of poor step sizes",
-          "Adaptive optimizers: Introduction to Adam, RMSProp, and Momentum"
-        ],
-        speakerNotes: "Choosing the right learning rate is crucial. A rate that is too high causes the model to overshoot the minimum, while a rate that is too low leads to extremely slow convergence or getting stuck in local minima.",
-        visualDescription: "A comparison graph showing diverging, oscillating, and converging optimization paths.",
-        imagePrompt: "A chart showing vector arrows of different sizes climbing down a parabolic curve."
-      },
-      {
-        title: "Challenges in Optimization",
-        bulletPoints: [
-          "Vanishing gradients: Activations shrinking error signals to zero",
-          "Exploding gradients: Unstable parameters causing training to fail",
-          "Saddle points and local minima: Navigating flat plateau regions"
-        ],
-        speakerNotes: "Deep networks face severe gradient challenges. Error signals can fade entirely or grow uncontrollably. Modern techniques like batch normalization and skip connections are designed to mitigate these issues.",
-        visualDescription: "A line chart showing gradient magnitude decaying exponentially across multiple layers.",
-        imagePrompt: "A high-tech grid diagram showing signals fading as they traverse deep network layers."
+        title: "Evaluating Model Performance",
+        lectureText: "Once trained, we must test the model on separate data it has never seen before. We measure its performance using indicators like accuracy, precision, and recall. This ensures our model doesn't just memorize the training set. Let's look at a typical evaluation report displaying precision curves.",
+        mediaType: "image",
+        mediaQuery: "machine learning evaluation precision confusion matrix",
+        caption: "An evaluation metrics board displaying a confusion matrix, precision rating, and recall parameters.",
+        keyTakeaway: "Model evaluation checks generalization using precision, recall, and accuracy metrics."
       }
     ];
   }
 
-  // General default fallback slides (designed to be highly academic and clean)
+  // General default fallback segments
   return [
     {
       title: `Introduction to ${topic}`,
-      bulletPoints: [
-        `Historical emergence and core definitions of ${topic}`,
-        `Primary components and boundary conditions of the system`,
-        `Fundamental goals and qualitative concepts of the study`
-      ],
-      speakerNotes: `Welcome to our session on "${topic}". In undergraduate studies, understanding the foundational principles of this subject is essential for analyzing more complex systems. Today, we will explore the core concepts step-by-step to build a robust mental model.`,
-      visualDescription: `A conceptual diagram showing key elements and inputs of ${topic}.`,
-      imagePrompt: `A clean, academic minimalist illustration showcasing ${topic} elements.`
+      lectureText: `Welcome to our session on ${topic}! Understanding the foundations of this subject is essential for analyzing complex systems. Today, we will explore the core concepts step-by-step to build a robust mental model. Let's start with this conceptual diagram outlining the boundary conditions of this study.`,
+      mediaType: "image",
+      mediaQuery: `${topic} concept diagram schematic`,
+      caption: `A schematic diagram illustrating the primary boundary conditions of ${topic}.`,
+      keyTakeaway: `Establish foundational definitions and boundary conditions of ${topic}.`
     },
     {
-      title: `Theoretical Models and Equations`,
-      bulletPoints: [
-        `Formulating governing equations and parameters of ${topic}`,
-        `Analytic solutions under ideal and restricted conditions`,
-        `Analyzing linear and non-linear system responses`
-      ],
-      speakerNotes: `First, let's look at the primary definitions and mechanics. "${topic}" operates under key rules and parameters that describe how variables interact. By breaking down the active forces, we can predict behaviors and calculate outcomes under various constraints.`,
-      visualDescription: `A mathematical representation showing relations between system variables.`,
-      imagePrompt: `An elegant scientific diagram with mathematical symbols representing ${topic}.`
+      title: "Core Mechanics and Real-World Applications",
+      lectureText: `Now, let's explore how ${topic} operates in real-world environments. Theoretical models often assume ideal conditions, but in practice, factors like resistance, noise, or external variables affect the system. Let's watch this video showing these variables in action and explaining how they interact.`,
+      mediaType: "video",
+      mediaQuery: `${topic} explanation demonstration video`,
+      caption: `A demonstration video illustrating active variables and interactions in a practical system.`,
+      keyTakeaway: `Analyze empirical observations and environmental factors affecting the system.`
     },
     {
-      title: `Empirical Observations & Real-World Puzzles`,
-      bulletPoints: [
-        `Comparing analytical model outputs with physical measurements`,
-        `Sources of variance: system errors, resistance, and noise`,
-        `Designing robust experiments to isolate variables`
-      ],
-      speakerNotes: `Next, we observe how this concept applies in real-world environments. Theoretical models often assume ideal conditions, but in practice, factors like resistance, external variables, or systemic errors affect the system. Understanding these variances is crucial for practical engineering and research.`,
-      visualDescription: `A comparison chart plotting theoretical lines against scattered empirical data points.`,
-      imagePrompt: `An experimental laboratory setup for testing and measuring ${topic} variables.`
-    },
-    {
-      title: `Synthesis, Applications, and Future Trends`,
-      bulletPoints: [
-        `Bridging academic theory with practical engineering designs`,
-        `Solving multi-variable case studies and analytical problems`,
-        `Open research directions and emerging breakthroughs in ${topic}`
-      ],
-      speakerNotes: `Finally, let's synthesize these ideas. By connecting the mathematical foundations with empirical observations, we can solve complex analytical problems. As we transition to the topic evaluation, keep in mind how these relationships apply to different scenarios.`,
-      visualDescription: `A unified block schematic diagram showing all components of ${topic} integrated.`,
-      imagePrompt: `A futuristic digital collage representing the application and future of ${topic}.`
+      title: "Synthesis and Future Outlook",
+      lectureText: `Finally, let's synthesize these ideas. By connecting the mathematical foundations with empirical observations, we can solve complex analytical problems. As we prepare to check our knowledge, take a look at this overview showing the future trends and integrated applications of this subject.`,
+      mediaType: "image",
+      mediaQuery: `${topic} futuristic technology concept`,
+      caption: `A visualization of emerging technological frameworks and future applications of ${topic}.`,
+      keyTakeaway: `Synthesize formulas and observations to solve multi-variable case studies.`
     }
   ];
 };
@@ -183,1747 +114,1130 @@ const cleanJsonString = (rawText) => {
   if (cleaned.startsWith('```')) {
     cleaned = cleaned.replace(/^```(json)?/i, '').replace(/```$/, '').trim();
   }
-
-  const arrayStart = cleaned.indexOf('{');
-  const arrayEnd = cleaned.lastIndexOf('}');
+  const arrayStart = cleaned.indexOf('[');
+  const arrayEnd = cleaned.lastIndexOf(']');
   if (arrayStart !== -1 && arrayEnd !== -1 && arrayEnd > arrayStart) {
     cleaned = cleaned.slice(arrayStart, arrayEnd + 1);
   }
-
   return cleaned;
 };
 
-// Smart keyword extraction utility
-const extractKeywords = (name) => {
-  const stopwords = new Set([
-    'of', 'and', 'the', 'in', 'a', 'to', 'for', 'on', 'is', 'at', 'by', 'with',
-    'about', 'from', 'an', 'law', 'laws', 'theory', 'concept', 'introduction',
-    'topic', 'topics', 'basic', 'basics', 'advanced', 'principles', 'understanding'
-  ]);
-  
-  const clean = name.toLowerCase().replace(/[^\w\s]/g, '');
-  const words = clean.split(/\s+/).filter(w => w.length > 2 && !stopwords.has(w));
-  
-  const keywords = [];
-  for (const w of words) {
-    if (keywords.length < 2 && !keywords.includes(w)) {
-      keywords.push(w);
-    }
-  }
-  
-  const fallbackWords = name.split(/\s+/).filter(w => w.length > 1);
-  for (const w of fallbackWords) {
-    const lw = w.toLowerCase().replace(/[^\w\s]/g, '').trim();
-    if (keywords.length < 2 && !keywords.includes(lw) && lw.length > 1 && !stopwords.has(lw)) {
-      keywords.push(lw);
-    }
-  }
-  
-  while (keywords.length < 2) {
-    keywords.push(keywords.length === 0 ? 'science' : 'education');
-  }
-  
-  return keywords;
-};
-
-// Helper to extract YouTube video ID
-const extractYoutubeId = (url) => {
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-};
-
-// Local curated educational YouTube search database
-const searchYoutubeVideos = async (query) => {
-  if (!query) return [];
-  
-  const lowerQuery = query.toLowerCase();
-  
-  // Try fetching from public Invidious API
-  try {
-    const res = await fetch(`https://vid.puffyan.us/api/v1/search?q=${encodeURIComponent(query)}&type=video`, {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (res.ok) {
-      const data = await res.json();
-      if (data && Array.isArray(data) && data.length > 0) {
-        return data.slice(0, 5).map(item => ({
-          videoId: item.videoId,
-          title: item.title,
-          author: item.author,
-          thumbnail: item.videoThumbnails?.[0]?.url || `https://img.youtube.com/vi/${item.videoId}/0.jpg`,
-        }));
-      }
-    }
-  } catch (err) {
-    console.warn("Public YouTube search API failed, using local educational index fallback:", err);
-  }
-
-  // High quality educational playlist mapping
-  const curatedList = [
-    {
-      keywords: ['neural network', 'deep learning', 'what is a neural network', 'perceptron', 'neuron'],
-      videos: [
-        { videoId: 'aircAruvnKk', title: 'But what is a neural network? | Chapter 1, Deep learning', author: '3Blue1Brown' },
-        { videoId: 'IHZwWFHWa-w', title: 'Gradient descent, how neural networks learn | Chapter 2', author: '3Blue1Brown' },
-        { videoId: 'Ilg3gGewQ5U', title: 'What is backpropagation, and what is it actually doing? | Chapter 3', author: '3Blue1Brown' },
-        { videoId: 'tIeHLnjs5U8', title: 'Backpropagation calculus | Chapter 4, Deep learning', author: '3Blue1Brown' },
-        { videoId: 'zxWYJyFWRK0', title: 'Neural Networks Explained from Scratch', author: 'StatQuest' }
-      ]
-    },
-    {
-      keywords: ['backpropagation', 'backprop', 'chain rule', 'gradient', 'gradient descent'],
-      videos: [
-        { videoId: 'Ilg3gGewQ5U', title: 'What is backpropagation, and what is it actually doing? | Chapter 3', author: '3Blue1Brown' },
-        { videoId: 'tIeHLnjs5U8', title: 'Backpropagation calculus | Chapter 4, Deep learning', author: '3Blue1Brown' },
-        { videoId: 'q555kfIFUCM', title: 'Backpropagation Main Ideas', author: 'StatQuest' },
-        { videoId: 'GKZo7NPDDCI', title: 'Neural Networks: Backpropagation & Gradient Descent', author: 'Computerphile' }
-      ]
-    },
-    {
-      keywords: ['activation function', 'relu', 'sigmoid', 'tanh', 'swish', 'gelu'],
-      videos: [
-        { videoId: 'gYpoJMIdxux', title: 'Activation Functions Explained', author: 'StatQuest' },
-        { videoId: 'm0pIlLfpXWE', title: 'Sigmoid, ReLU, Tanh Activation Functions', author: 'DeepLizard' },
-        { videoId: '83pT15eO428', title: 'Activation Functions in Neural Networks', author: 'Computerphile' }
-      ]
-    },
-    {
-      keywords: ['decision tree', 'random forest', 'entropy', 'information gain'],
-      videos: [
-        { videoId: '7VeUPuFGJHk', title: 'Decision Trees Explained', author: 'StatQuest' },
-        { videoId: 'J4Wdy0Wc_xQ', title: 'Random Forests Explained', author: 'StatQuest' },
-        { videoId: 'LDRbARMSgME', title: 'Entropy and Information Gain in Decision Trees', author: 'StatQuest' }
-      ]
-    },
-    {
-      keywords: ['unsupervised', 'clustering', 'k-means', 'pca', 'dimensionality'],
-      videos: [
-        { videoId: 'FakbGcyshyw', title: 'K-Means Clustering Explained', author: 'StatQuest' },
-        { videoId: 'FgaUQP60dPE', title: 'Principal Component Analysis (PCA) Step-by-Step', author: 'StatQuest' },
-        { videoId: 'ne-dP34ZIZ8', title: 'Hierarchical Clustering Explained', author: 'StatQuest' }
-      ]
-    },
-    {
-      keywords: ['overfit', 'underfit', 'regularization', 'lasso', 'ridge', 'bias', 'variance'],
-      videos: [
-        { videoId: 'Q81RR3yKn30', title: 'Machine Learning: Bias vs Variance (Overfitting)', author: 'StatQuest' },
-        { videoId: 'Q81yN07u_EU', title: 'Regularization Part 1: Ridge Regression', author: 'StatQuest' },
-        { videoId: 'NGf0yZ1AcSU', title: 'Regularization Part 2: Lasso Regression', author: 'StatQuest' }
-      ]
-    }
-  ];
-
-  const match = curatedList.find(cat => 
-    cat.keywords.some(keyword => lowerQuery.includes(keyword))
-  );
-
-  if (match) {
-    return match.videos.map(v => ({
-      ...v,
-      thumbnail: `https://img.youtube.com/vi/${v.videoId}/0.jpg`
-    }));
-  }
-
-  // General default high-quality education videos
-  return [
-    { videoId: 'aircAruvnKk', title: 'But what is a neural network? | Chapter 1, Deep learning', author: '3Blue1Brown', thumbnail: 'https://img.youtube.com/vi/aircAruvnKk/0.jpg' },
-    { videoId: 'zxWYJyFWRK0', title: 'Neural Networks Explained from Scratch', author: 'StatQuest', thumbnail: 'https://img.youtube.com/vi/zxWYJyFWRK0/0.jpg' },
-    { videoId: 'IHZwWFHWa-w', title: 'Gradient descent, how neural networks learn | Chapter 2', author: '3Blue1Brown', thumbnail: 'https://img.youtube.com/vi/IHZwWFHWa-w/0.jpg' }
-  ];
+// Curated educational video lookup database
+const getFallbackYoutubeId = (query) => {
+  const q = query.toLowerCase();
+  if (q.includes('neural') || q.includes('neuron') || q.includes('perceptron')) return 'aircAruvnKk';
+  if (q.includes('activation') || q.includes('relu') || q.includes('sigmoid')) return 'gYpoJMIdxux';
+  if (q.includes('backprop') || q.includes('gradient')) return 'Ilg3gGewQ5U';
+  if (q.includes('supervised') || q.includes('classification')) return '7VeUPuFGJHk';
+  if (q.includes('unsupervised') || q.includes('cluster')) return 'FakbGcyshyw';
+  if (q.includes('decision') || q.includes('forest')) return '7VeUPuFGJHk';
+  if (q.includes('overfit') || q.includes('bias')) return 'Q81RR3yKn30';
+  return 'aircAruvnKk';
 };
 
 export default function Classroom({
   onNext,
   classData,
   apiKey,
-  onSaveApiKey,
   unsplashClientId,
-  onSaveUnsplashClientId,
-  elevenLabsApiKey,
-  onSaveElevenLabsApiKey,
   currentTopicIndex = 0,
   onExplanationReady,
   studentInfo,
 }) {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
   const topicName = classData?.topics?.[currentTopicIndex] || 'Selected Topic';
-  const totalTopics = classData?.topics?.length || 6;
-  const keywords = useMemo(() => extractKeywords(topicName), [topicName]);
 
-  // Whiteboard Dynamic state
-  const [boardState, setBoardState] = useState({
-    title: `Live Lecture: ${topicName}`,
-    bulletPoints: [
-      'Toggle the microphone below to start teaching.',
-      'Speak clearly about the topic to generate whiteboard summaries.',
-      'Search or paste YouTube links to project reference videos.',
-      'AI will dynamically outline diagrams and note keys in real-time.'
-    ],
-    visualDescription: 'Awaiting dynamic whiteboard sketches and live schematics.',
-    youtubeSearchQuery: topicName,
-    activeVideoId: null,
-    isVideoVisible: false,
-    activeTab: 'schematic', // schematic | illustration | video
-  });
+  // Environment variables YouTube key
+  const youtubeApiKey = typeof process !== 'undefined' && process.env?.YOUTUBE_API_KEY || import.meta.env?.VITE_YOUTUBE_API_KEY || '';
 
-  // Dynamic slides history accumulated for Quiz generation
-  const [liveSlidesHistory, setLiveSlidesHistory] = useState(() => getFallbackSlides(topicName));
+  // Pre-join state
+  const [preJoined, setPreJoined] = useState(false);
+  const [displayName, setDisplayName] = useState(studentInfo?.fullName || 'Student');
+  const [cameraOn, setCameraOn] = useState(true);
+  const [micOn, setMicOn] = useState(true);
+  const [localStream, setLocalStream] = useState(null);
 
-  // Speech Recognition States
-  const [isListening, setIsListening] = useState(false);
-  const [cumulativeTranscript, setCumulativeTranscript] = useState('');
-  const [interimTranscript, setInterimTranscript] = useState('');
-  const [speechTranscript, setSpeechTranscript] = useState('');
-  const [lastProcessedText, setLastProcessedText] = useState('');
-  const [autoGenerate, setAutoGenerate] = useState(true);
-  const [generatingBoard, setGeneratingBoard] = useState(false);
-  const [simulationText, setSimulationText] = useState('');
+  // Classroom state
+  const [segments, setSegments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [currentSegmentIdx, setCurrentSegmentIdx] = useState(-1);
+  const [aiIsSpeaking, setAiIsSpeaking] = useState(false);
+  const [sharedImage, setSharedImage] = useState(null);
+  
+  // YouTube player states
+  const [sharedVideoId, setSharedVideoId] = useState(null);
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoThumbnail, setVideoThumbnail] = useState('');
+  const [channelName, setChannelName] = useState('');
+  const [useFallbackLink, setUseFallbackLink] = useState(false);
+  const [youtubeQuotaExhausted, setYoutubeQuotaExhausted] = useState(false);
+  const youtubeCacheRef = useRef({}); // Caches search queries
+  const activeSegment = segments[currentSegmentIdx];
 
-  // Speech API recognition ref
-  const recognitionRef = useRef(null);
+  // Interrupt / Resume states
+  const [isAnsweringQuestion, setIsAnsweringQuestion] = useState(false);
+  const [teacherAnsweringText, setTeacherAnsweringText] = useState('');
 
-  // Unsplash Image state
-  const [unsplashImage, setUnsplashImage] = useState(null);
-  const [unsplashLoading, setUnsplashLoading] = useState(false);
+  // Panels state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [participantsOpen, setParticipantsOpen] = useState(false);
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState([
+    { sender: 'Priya Sharma', text: `Hi class! Excited to learn about ${topicName} today.`, time: '10:02 AM', isSelf: false },
+    { sender: 'Alex Chen', text: 'Me too. Hope the video examples make the mechanics clear.', time: '10:03 AM', isSelf: false }
+  ]);
 
-  // YouTube search results
-  const [youtubeResults, setYoutubeResults] = useState([]);
-  const [youtubeSearching, setYoutubeSearching] = useState(false);
-  const [customVideoQuery, setCustomVideoQuery] = useState('');
-
-  const [timeLeft, setTimeLeft] = useState((classData?.duration || 10) * 60);
-  const [topicComplete, setTopicComplete] = useState(false);
-  const [transitionCountdown, setTransitionCountdown] = useState(3);
+  // Audio settings
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(1.0);
 
-  // Student-side local TTS reader to narrate live lecture updates
-  const lastSpokenRef = useRef('');
+  // Refs for tracking active speaking state
+  const utteranceRef = useRef(null);
+  const localStreamRef = useRef(null);
+  const ttsTimeoutRef = useRef(null);
+  const playerRef = useRef(null);
+  const chatInputRef = useRef(null);
+
+  // Start pre-join camera stream
+  useEffect(() => {
+    let active = true;
+    const initCamera = async () => {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+        if (active) {
+          setLocalStream(stream);
+          localStreamRef.current = stream;
+        }
+      } catch (err) {
+        console.warn("Webcam permissions not granted or camera unavailable:", err);
+      }
+    };
+    initCamera();
+    return () => {
+      active = false;
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(t => t.stop());
+      }
+    };
+  }, []);
+
+  // Update tracks enabled based on toggles
+  useEffect(() => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach(t => { t.enabled = cameraOn; });
+    }
+  }, [cameraOn, localStream]);
 
   useEffect(() => {
-    if (!studentInfo || isMuted || !boardState.title || volume === 0) {
-      if (studentInfo && (isMuted || volume === 0) && window.speechSynthesis) {
-        window.speechSynthesis.cancel();
+    if (localStream) {
+      localStream.getAudioTracks().forEach(t => { t.enabled = micOn; });
+    }
+  }, [micOn, localStream]);
+
+  // Control YouTube Player API play/pause based on active interruption
+  useEffect(() => {
+    if (!playerRef.current || typeof playerRef.current.pauseVideo !== 'function') return;
+    try {
+      if (isAnsweringQuestion) {
+        playerRef.current.pauseVideo();
+      } else {
+        playerRef.current.playVideo();
+      }
+    } catch (e) {
+      console.warn("YouTube Player play/pause control error:", e);
+    }
+  }, [isAnsweringQuestion]);
+
+  // Load YouTube IFrame Player API and initialize player
+  useEffect(() => {
+    if (activeSegment?.mediaType !== 'video' || !sharedVideoId) {
+      if (playerRef.current) {
+        try {
+          playerRef.current.destroy();
+        } catch (e) {}
+        playerRef.current = null;
       }
       return;
     }
-    
-    const contentKey = `${boardState.title}_${(boardState.bulletPoints || []).join('|')}_${volume}`;
-    if (contentKey === lastSpokenRef.current) return;
-    lastSpokenRef.current = contentKey;
 
+    let isMounted = true;
+    let checkInterval = null;
+
+    const createYTPlayer = () => {
+      if (!isMounted) return;
+      
+      const container = document.getElementById('youtube-player-container');
+      if (!container) {
+        setTimeout(createYTPlayer, 100);
+        return;
+      }
+
+      if (playerRef.current) {
+        try {
+          playerRef.current.destroy();
+        } catch (e) {}
+        playerRef.current = null;
+      }
+
+      try {
+        playerRef.current = new window.YT.Player('youtube-player-container', {
+          videoId: sharedVideoId,
+          playerVars: {
+            autoplay: 1,
+            origin: window.location.origin,
+            rel: 0,
+            modestbranding: 1
+          },
+          events: {
+            onError: (event) => {
+              console.warn("YouTube Player error, falling back:", event.data);
+              if (isMounted) setUseFallbackLink(true);
+            }
+          }
+        });
+      } catch (err) {
+        console.error("Failed to create YT.Player:", err);
+        if (isMounted) setUseFallbackLink(true);
+      }
+    };
+
+    if (!window.YT) {
+      if (!document.getElementById('youtube-iframe-api-script')) {
+        const tag = document.createElement('script');
+        tag.id = 'youtube-iframe-api-script';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      }
+
+      checkInterval = setInterval(() => {
+        if (window.YT && window.YT.Player) {
+          clearInterval(checkInterval);
+          createYTPlayer();
+        }
+      }, 100);
+    } else {
+      createYTPlayer();
+    }
+
+    return () => {
+      isMounted = false;
+      if (checkInterval) clearInterval(checkInterval);
+      if (playerRef.current) {
+        try {
+          playerRef.current.destroy();
+        } catch (e) {}
+        playerRef.current = null;
+      }
+    };
+  }, [sharedVideoId, activeSegment?.mediaType]);
+
+  // Callback ref for streaming the user camera preview
+  const userVideoRef = useCallback((node) => {
+    if (node && localStream) {
+      node.srcObject = localStream;
+    }
+  }, [localStream]);
+
+  // Initialize Lecture segments via Gemini or preloaded fallbacks
+  const loadSegments = async () => {
+    setLoading(true);
+    let generated = null;
+
+    if (apiKey) {
+      const prompt = `You are a world-class AI professor. Teach a lesson on the topic: "${topicName}". 
+Break this lesson down into exactly 3 sequential segments.
+For each segment, write:
+1. A descriptive title.
+2. The spoken explanation text (approx. 50-70 words). This will be read aloud via Text-to-Speech. Speak directly to the students.
+3. The media type: either "image" or "video". Decide this media type based on the content:
+   - For a concept explanation, general description, formula, or static diagram, choose "image".
+   - For a process breakdown, demonstration, experiment walkthrough, or historical event, choose "video".
+4. A search query to fetch the image (from Unsplash) or search a video (on YouTube) (2-3 key search terms).
+5. A brief visual caption (1 sentence) explaining what the visual content is displaying.
+6. A single brief bullet point summarizing the key takeaway.
+
+Return ONLY a valid JSON array matching this structure:
+[
+  {
+    "title": "Segment Title",
+    "lectureText": "Spoken text...",
+    "mediaType": "image",
+    "mediaQuery": "unsplash search query",
+    "caption": "Caption describing the visual...",
+    "keyTakeaway": "takeaway point"
+  },
+  {
+    "title": "Segment Title",
+    "lectureText": "Spoken text...",
+    "mediaType": "video",
+    "mediaQuery": "youtube search query",
+    "caption": "Caption describing what the video demonstrates...",
+    "keyTakeaway": "takeaway point"
+  }
+]`;
+
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+            }),
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (text) {
+            const cleaned = cleanJsonString(text);
+            const parsed = JSON.parse(cleaned);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              generated = parsed;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Gemini classroom segments query failed, falling back to curated slides:", err);
+      }
+    }
+
+    const finalSegments = generated || getCuratedSegments(topicName);
+    setSegments(finalSegments);
+    setLoading(false);
+
+    // Sync with App parent so Quiz knows the lesson context
+    const syncedSlides = finalSegments.map((s) => ({
+      title: s.title,
+      bulletPoints: [s.keyTakeaway],
+      speakerNotes: s.lectureText,
+      visualDescription: s.mediaQuery
+    }));
+    onExplanationReady?.(currentTopicIndex, syncedSlides);
+
+    // Auto trigger first segment index
+    setCurrentSegmentIdx(0);
+  };
+
+  // Start teaching when preJoin is completed
+  const handleJoin = () => {
+    setPreJoined(true);
+    loadSegments();
+  };
+
+  // Fetch Unsplash Image matching media query
+  const loadUnsplashImage = async (query) => {
+    if (!unsplashClientId) return;
+    try {
+      const res = await fetch(
+        `https://api.unsplash.com/search/photos?query=${encodeURIComponent(query)}&per_page=1&client_id=${unsplashClientId}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        const url = data?.results?.[0]?.urls?.regular;
+        if (url) {
+          setSharedImage(url);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn("Unsplash image load failed:", err);
+    }
+    // General placeholder fallback
+    setSharedImage(`https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=600&auto=format&fit=crop`);
+  };
+
+  // Load YouTube Video via API v3 with quota caching
+  const loadYoutubeVideo = async (query) => {
+    setVideoTitle('');
+    setVideoThumbnail('');
+    setChannelName('');
+    setSharedVideoId(null);
+    setUseFallbackLink(false);
+
+    // 1. Check Cache
+    if (youtubeCacheRef.current[query]) {
+      const cached = youtubeCacheRef.current[query];
+      setSharedVideoId(cached.videoId);
+      setVideoTitle(cached.title);
+      setChannelName(cached.channelName);
+      setVideoThumbnail(cached.thumbnail);
+      setUseFallbackLink(cached.useFallbackLink || false);
+      return;
+    }
+
+    // 2. Fallback if no API key is set in environment
+    if (!youtubeApiKey) {
+      console.warn("YOUTUBE_API_KEY environment variable is missing. Using local fallback.");
+      const fallbackId = getFallbackYoutubeId(query);
+      const title = `Demonstrating: ${query}`;
+      const channel = `Educational Resource`;
+      const thumb = `https://img.youtube.com/vi/${fallbackId}/maxresdefault.jpg`;
+      
+      setSharedVideoId(fallbackId);
+      setVideoTitle(title);
+      setChannelName(channel);
+      setVideoThumbnail(thumb);
+      setUseFallbackLink(false);
+      
+      youtubeCacheRef.current[query] = {
+        videoId: fallbackId,
+        title,
+        channelName: channel,
+        thumbnail: thumb,
+        useFallbackLink: false
+      };
+      return;
+    }
+
+    // 3. Query YouTube Data API v3
+    try {
+      const res = await fetch(
+        `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=1&relevanceLanguage=en&safeSearch=strict&key=${youtubeApiKey}`
+      );
+
+      if (res.status === 403) {
+        console.warn("YouTube Data API Quota Exceeded (Status 403). Activating fallback watcher UI.");
+        setYoutubeQuotaExhausted(true);
+        triggerYoutubeFallback(query);
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(`YouTube API returned status ${res.status}`);
+      }
+
+      const data = await res.json();
+      const items = data.items || [];
+
+      if (items.length > 0) {
+        const item = items[0];
+        const videoId = item.id?.videoId;
+        const title = item.snippet?.title || `Process Demo: ${query}`;
+        const channel = item.snippet?.channelTitle || `YouTube Educator`;
+        const thumb = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+
+        if (videoId) {
+          setSharedVideoId(videoId);
+          setVideoTitle(title);
+          setChannelName(channel);
+          setVideoThumbnail(thumb);
+          setUseFallbackLink(false);
+
+          youtubeCacheRef.current[query] = {
+            videoId,
+            title,
+            channelName: channel,
+            thumbnail: thumb,
+            useFallbackLink: false
+          };
+          return;
+        }
+      }
+
+      // No videos found, load fallback
+      triggerYoutubeFallback(query);
+    } catch (err) {
+      console.error("YouTube search request failed, trigger fallback:", err);
+      triggerYoutubeFallback(query);
+    }
+  };
+
+  const triggerYoutubeFallback = (query) => {
+    const fallbackId = getFallbackYoutubeId(query);
+    const title = `Reference Video: ${query}`;
+    const channel = `Academic Reference`;
+    const thumb = `https://img.youtube.com/vi/${fallbackId}/maxresdefault.jpg`;
+    
+    setSharedVideoId(fallbackId);
+    setVideoTitle(title);
+    setChannelName(channel);
+    setVideoThumbnail(thumb);
+    setUseFallbackLink(true);
+
+    youtubeCacheRef.current[query] = {
+      videoId: fallbackId,
+      title,
+      channelName: channel,
+      thumbnail: thumb,
+      useFallbackLink: true
+    };
+  };
+
+  // Run the current lecture segment (displays image/video + plays voice)
+  useEffect(() => {
+    if (currentSegmentIdx === -1 || segments.length === 0 || isAnsweringQuestion) return;
+    
+    const segment = segments[currentSegmentIdx];
+    
+    // 1. Update main area media
+    if (segment.mediaType === 'image') {
+      setSharedVideoId(null);
+      loadUnsplashImage(segment.mediaQuery);
+    } else {
+      setSharedImage(null);
+      loadYoutubeVideo(segment.mediaQuery);
+    }
+
+    // 2. Play speech narration
+    speakLectureText(segment.lectureText, () => {
+      // Trigger next segment advance when done
+      advanceSegment();
+    });
+
+    return () => {
+      if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+    };
+  }, [currentSegmentIdx, segments, isAnsweringQuestion]);
+
+  // Unified speech synthesiser
+  const speakLectureText = (text, onFinished) => {
+    if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
+    
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
       
-      const speechText = `${boardState.title}. ${boardState.bulletPoints.join('. ')}`;
-      const utterance = new SpeechSynthesisUtterance(speechText);
-      utterance.rate = 0.92; // Clear, professional pacing
-      utterance.pitch = 1.0;
-      utterance.volume = volume;
-      
+      const utterance = new SpeechSynthesisUtterance(text);
+      utteranceRef.current = utterance;
+      utterance.rate = 0.90;
+      utterance.volume = isMuted ? 0 : volume;
+
       const voices = window.speechSynthesis.getVoices();
-      const englishVoices = voices.filter((v) => v.lang.startsWith('en'));
-      
-      const preferredPatterns = [
-        /Google.*US/i,              // Google US English (Chrome)
-        /Google.*UK/i,              // Google UK English (Chrome)
-        /Microsoft.*Online.*Natural/i, // Microsoft Edge Neural voices
-        /Samantha/i,                // macOS high-quality voice
-        /Daniel/i,                  // macOS UK voice
-        /Karen/i,                   // macOS Australian voice
-        /Zira/i,                    // Windows Zira
-        /David/i,                   // Windows David
-        /Mark/i,                    // Windows Mark
-      ];
+      const engVoice = voices.find(v => v.lang.startsWith('en')) || voices[0];
+      if (engVoice) utterance.voice = engVoice;
 
-      let selectedVoice = null;
-      for (const pattern of preferredPatterns) {
-        selectedVoice = englishVoices.find((v) => pattern.test(v.name));
-        if (selectedVoice) break;
-      }
+      utterance.onstart = () => {
+        setAiIsSpeaking(true);
+      };
 
-      if (!selectedVoice) {
-        selectedVoice = englishVoices[0] || voices[0];
-      }
-      
-      if (selectedVoice) {
-        utterance.voice = selectedVoice;
-      }
-      
+      utterance.onend = () => {
+        setAiIsSpeaking(false);
+        // Natural pause before executing callback
+        ttsTimeoutRef.current = setTimeout(() => {
+          onFinished();
+        }, 3000);
+      };
+
+      utterance.onerror = (e) => {
+        console.warn("Speech synthesis error:", e);
+        setAiIsSpeaking(false);
+        // Fallback timer if audio blocked
+        ttsTimeoutRef.current = setTimeout(() => {
+          onFinished();
+        }, text.length * 75);
+      };
+
       window.speechSynthesis.speak(utterance);
-    }
-  }, [boardState.title, boardState.bulletPoints, studentInfo, isMuted, volume]);
-
-  // Settings Panel
-  const [showKeyPanel, setShowKeyPanel] = useState(false);
-  const [keyInput, setKeyInput] = useState(apiKey || '');
-  const [unsplashInput, setUnsplashInput] = useState(unsplashClientId || '');
-  const [settingsSaved, setSettingsSaved] = useState(false);
-
-  // Initial Sync of dynamic history for Quiz
-  useEffect(() => {
-    onExplanationReady?.(currentTopicIndex, liveSlidesHistory);
-  }, [currentTopicIndex, liveSlidesHistory, onExplanationReady]);
-
-  // Speech Recognition Engine initialization
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      console.warn("Speech Recognition not supported in this browser.");
-      return;
-    }
-
-    const rec = new SpeechRecognition();
-    rec.continuous = true;
-    rec.interimResults = true;
-    rec.lang = 'en-US';
-
-    rec.onresult = (event) => {
-      let interim = '';
-      let final = '';
-      for (let i = event.resultIndex; i < event.results.length; ++i) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          final += transcript + ' ';
-        } else {
-          interim += transcript;
-        }
-      }
-
-      if (final) {
-        setCumulativeTranscript(prev => prev + final);
-        setSpeechTranscript(prev => prev + final);
-      }
-      setInterimTranscript(interim);
-    };
-
-    rec.onerror = (event) => {
-      console.error("Speech recognition error:", event.error);
-      if (event.error === 'not-allowed') {
-        setIsListening(false);
-      }
-    };
-
-    rec.onend = () => {
-      if (isListening && recognitionRef.current) {
-        try {
-          recognitionRef.current.start();
-        } catch (e) {
-          console.warn("Failed to restart speech recognition:", e);
-        }
-      }
-    };
-
-    recognitionRef.current = rec;
-
-    return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.onresult = null;
-        recognitionRef.current.onerror = null;
-        recognitionRef.current.onend = null;
-        try {
-          recognitionRef.current.stop();
-        } catch (e) {}
-      }
-    };
-  }, [isListening]);
-
-  // Handle listening state toggle
-  const toggleListening = () => {
-    if (!recognitionRef.current) {
-      alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
     } else {
-      try {
-        setInterimTranscript('');
-        recognitionRef.current.start();
-        setIsListening(true);
-      } catch (err) {
-        console.error("Failed to start speech recognition:", err);
-      }
+      setAiIsSpeaking(true);
+      ttsTimeoutRef.current = setTimeout(() => {
+        setAiIsSpeaking(false);
+        onFinished();
+      }, text.length * 80);
     }
   };
 
-  // Debounced auto whiteboard update
-  useEffect(() => {
-    if (!isListening || !autoGenerate || !speechTranscript) return;
-
-    const unprocessed = speechTranscript.slice(lastProcessedText.length).trim();
-    if (unprocessed.length < 50) return; // Wait for ~10-15 words
-
-    const timer = setTimeout(() => {
-      generateBoardUpdate(speechTranscript);
-    }, 3000); // 3 seconds of pause
-
-    return () => clearTimeout(timer);
-  }, [speechTranscript, lastProcessedText, isListening, autoGenerate]);
-
-  // Generate Whiteboard Content via Gemini API or Mock Fallback
-  const generateBoardUpdate = async (fullText) => {
-    if (!fullText || generatingBoard) return;
-    setGeneratingBoard(true);
-
-    const textSegment = fullText.slice(lastProcessedText.length).trim();
-    if (!textSegment) {
-      setGeneratingBoard(false);
-      return;
-    }
-
-    setLastProcessedText(fullText);
-
-    if (!apiKey) {
-      simulateMockBoardUpdate(textSegment);
-      setGeneratingBoard(false);
-      return;
-    }
-
-    const promptText = `You are an AI teaching assistant. The teacher is giving a live lecture on the topic: "${topicName}".
-Here is the transcript of what the teacher has said so far in this lecture segment:
-"${textSegment}"
-
-Current whiteboard state:
-Title: "${boardState.title}"
-Bullet points: ${JSON.stringify(boardState.bulletPoints)}
-
-Your task is to update the whiteboard dynamically based on the teacher's spoken words.
-1. If the teacher transitions to a new subtopic, update the title to a concise heading (3-5 words). Otherwise, keep the current title or make a slight refinement.
-2. Update or extend the list of bullet points (maximum 5 points). Ensure they are concise, professional, and capture the key educational points the teacher has just spoken. Do not repeat existing points.
-3. Generate a concise visual diagram description (1-2 sentences) of what should be drawn or visualized on the board to illustrate this concept.
-4. Formulate a short search query (2-3 keywords) to search YouTube for reference videos matching the specific concept being explained.
-
-You must respond ONLY with a JSON object matching this structure:
-{
-  "title": "Concise Subtopic Title",
-  "bulletPoints": ["point 1", "point 2", "point 3"],
-  "visualDescription": "Visual representation description",
-  "youtubeSearchQuery": "keyword search query"
-}
-Return ONLY the raw JSON object. Do not wrap in markdown code blocks or add extra explanation.`;
-
-    try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: promptText }] }],
-          }),
+  // Advance state
+  const advanceSegment = () => {
+    if (currentSegmentIdx < segments.length - 1) {
+      setCurrentSegmentIdx(prev => prev + 1);
+    } else {
+      // Lesson fully complete -> announce and transition to quiz
+      speakLectureText(
+        "That concludes our Zoom lecture on this topic. Please complete the quiz to evaluate your understanding.",
+        () => {
+          onNext();
         }
       );
-
-      if (!response.ok) throw new Error(`Gemini status ${response.status}`);
-
-      const data = await response.json();
-      const rawRes = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (rawRes) {
-        const cleaned = cleanJsonString(rawRes);
-        const parsed = JSON.parse(cleaned);
-
-        const newBoardState = {
-          ...boardState,
-          title: parsed.title || boardState.title,
-          bulletPoints: Array.isArray(parsed.bulletPoints) ? parsed.bulletPoints : boardState.bulletPoints,
-          visualDescription: parsed.visualDescription || boardState.visualDescription,
-          youtubeSearchQuery: parsed.youtubeSearchQuery || boardState.youtubeSearchQuery,
-        };
-
-        setBoardState(newBoardState);
-
-        const newSlide = {
-          title: newBoardState.title,
-          bulletPoints: newBoardState.bulletPoints,
-          speakerNotes: textSegment,
-          visualDescription: newBoardState.visualDescription
-        };
-
-        setLiveSlidesHistory(prev => {
-          const updated = [...prev, newSlide];
-          if (updated.length > 6) updated.shift();
-          onExplanationReady?.(currentTopicIndex, updated);
-          return updated;
-        });
-
-        if (parsed.youtubeSearchQuery && parsed.youtubeSearchQuery !== boardState.youtubeSearchQuery) {
-          handleYoutubeSearch(parsed.youtubeSearchQuery);
-        }
-      }
-    } catch (err) {
-      console.error("Gemini live board generation failed:", err);
-      simulateMockBoardUpdate(textSegment);
-    } finally {
-      setGeneratingBoard(false);
     }
   };
 
-  // Simulated AI responses based on speech segments
-  const simulateMockBoardUpdate = (textSegment) => {
-    const lowerText = textSegment.toLowerCase();
-    let title = boardState.title;
-    let points = [...boardState.bulletPoints];
-    let visual = boardState.visualDescription;
-    let query = boardState.youtubeSearchQuery;
+  // Handle Question interruption
+  const pauseAndAnswerQuestion = async (question) => {
+    setIsAnsweringQuestion(true);
+    setAiIsSpeaking(true);
+    
+    if (ttsTimeoutRef.current) clearTimeout(ttsTimeoutRef.current);
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (videoRef.current) videoRef.current.pause();
 
-    if (lowerText.includes('neural') || lowerText.includes('network') || lowerText.includes('neuron')) {
-      title = "Neural Network Architecture";
-      points = [
-        "Layered structure consisting of input, hidden, and output layers",
-        "Weighted connections represent signal strength between neurons",
-        "Activation functions introduce non-linearity to map complex relationships"
-      ];
-      visual = "Network diagram showing nodes, layers, and weighted connection paths.";
-      query = "neural network architecture";
-    } else if (lowerText.includes('backprop') || lowerText.includes('gradient') || lowerText.includes('chain rule')) {
-      title = "Backpropagation & Gradient Descent";
-      points = [
-        "Calculating loss gradients using the mathematical chain rule",
-        "Propagating error backwards from output to adjust connection weights",
-        "Optimizing weights to find the global minimum in loss landscape"
-      ];
-      visual = "Computational graph with forward and backward derivative flow arrows.";
-      query = "backpropagation main ideas";
-    } else if (lowerText.includes('activation') || lowerText.includes('relu') || lowerText.includes('sigmoid')) {
-      title = "Activation Functions";
-      points = [
-        "Sigmoid compresses values to a range between 0 and 1",
-        "ReLU outputs input directly if positive, preventing vanishing gradients",
-        "Activations enable the network to learn non-linear boundaries"
-      ];
-      visual = "Ramp function graph comparing Swish, Swish-GELU, and ReLU shapes.";
-      query = "activation functions relu sigmoid";
-    } else {
-      title = "Live Lecture Highlights";
-      const snippet = textSegment.split(/\s+/).slice(0, 8).join(' ');
-      points = [
-        `Explaining: "${snippet}..."`,
-        "Analyzing governing equations and systems in real-time",
-        "Formulating logical bounds and conceptual structures"
-      ];
-      visual = "Dynamic conceptual schematic relating current teaching topics.";
-      query = topicName;
+    // 1. Add thinking message
+    const thinkingMsg = { sender: 'AI Teacher', text: 'Thinking...', time: 'Just now', isSelf: false };
+    setChatMessages(prev => [...prev, thinkingMsg]);
+
+    let answerText = "";
+
+    // 2. Fetch answer using Gemini
+    if (apiKey) {
+      const answerPrompt = `You are a world-class AI professor teaching the topic: "${topicName}". A student has just asked this question during class: "${question}".
+      Write a brief, direct, and helpful answer (approx. 40-50 words) explaining the concept clearly. Speak directly to the student. Do not wrap in markdown or add extra headers.`;
+      
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: answerPrompt }] }],
+            }),
+          }
+        );
+        if (response.ok) {
+          const data = await response.json();
+          answerText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        }
+      } catch (err) {
+        console.warn("AI answer generation failed, using mock:", err);
+      }
     }
 
-    const newBoardState = {
-      ...boardState,
-      title,
-      bulletPoints: points,
-      visualDescription: visual,
-      youtubeSearchQuery: query,
-    };
+    // 3. Fallback answers
+    if (!answerText) {
+      const qLower = question.toLowerCase();
+      if (qLower.includes('how') || qLower.includes('work')) {
+        answerText = `Good question! In the context of ${topicName}, this system works by establishing connection rules. Weights and features adjust dynamically to capture input signals and minimize error.`;
+      } else if (qLower.includes('why') || qLower.includes('purpose') || qLower.includes('reason')) {
+        answerText = `Excellent query. We need this mechanism in ${topicName} to ensure the model generalizes well to new, unseen environments and avoids learning noise or irrelevant variables.`;
+      } else {
+        answerText = `That's an insightful point about ${topicName}. It highlights how different features interact under boundary conditions. We evaluate this using precision metrics to ensure stability.`;
+      }
+    }
 
-    setBoardState(newBoardState);
+    setTeacherAnsweringText(answerText);
 
-    const newSlide = {
-      title,
-      bulletPoints: points,
-      speakerNotes: textSegment,
-      visualDescription: visual
-    };
-
-    setLiveSlidesHistory(prev => {
-      const updated = [...prev, newSlide];
-      if (updated.length > 6) updated.shift();
-      onExplanationReady?.(currentTopicIndex, updated);
+    // Replace "Thinking..." with actual answer
+    setChatMessages(prev => {
+      const updated = [...prev];
+      if (updated[updated.length - 1]?.text === 'Thinking...') {
+        updated[updated.length - 1] = { sender: 'AI Teacher', text: answerText, time: 'Just now', isSelf: false };
+      }
       return updated;
     });
 
-    if (query) {
-      handleYoutubeSearch(query);
-    }
+    // 4. Speak the answer, and then resume
+    speakLectureText(answerText, () => {
+      // Clear answering state and resume current segment lecture
+      setTeacherAnsweringText('');
+      setIsAnsweringQuestion(false);
+      if (videoRef.current) videoRef.current.play();
+    });
   };
 
-  // Simulate speaking for testing/simulations
-  const handleSimulateSpeech = () => {
-    if (!simulationText.trim()) return;
-    const cleanText = simulationText.trim();
-    setCumulativeTranscript(prev => prev + cleanText + ' ');
-    setSpeechTranscript(prev => prev + cleanText + ' ');
-    generateBoardUpdate(speechTranscript + cleanText + ' ');
-    setSimulationText('');
-  };
+  // Chat message submission
+  const handleSendChat = (e) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
 
-  // Fetch Unsplash Image for the current title
-  useEffect(() => {
-    if (!unsplashClientId || !boardState.title) return;
-    let active = true;
-    const fetchImage = async () => {
-      unsplashLoading || setUnsplashLoading(true);
-      try {
-        const res = await fetch(
-          `https://api.unsplash.com/search/photos?query=${encodeURIComponent(
-            boardState.title
-          )}&per_page=1&client_id=${unsplashClientId}`
-        );
-        if (res.ok) {
-          const data = await res.json();
-          const url = data?.results?.[0]?.urls?.regular;
-          if (active && url) {
-            setUnsplashImage(url);
-          }
-        }
-      } catch (err) {
-        console.warn("Unsplash fetch failed:", err);
-      } finally {
-        if (active) setUnsplashLoading(false);
-      }
+    const query = chatInput.trim();
+    const newMsg = { 
+      sender: displayName, 
+      text: query, 
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), 
+      isSelf: true 
     };
-    fetchImage();
-    return () => { active = false; };
-  }, [boardState.title, unsplashClientId]);
+    setChatMessages(prev => [...prev, newMsg]);
+    setChatInput('');
 
-  // YouTube Search Logic
-  const handleYoutubeSearch = async (query) => {
-    if (!query) return;
-    setYoutubeSearching(true);
-    try {
-      const results = await searchYoutubeVideos(query);
-      setYoutubeResults(results);
-    } catch (err) {
-      console.error("YouTube search error:", err);
-    } finally {
-      setYoutubeSearching(false);
-    }
+    pauseAndAnswerQuestion(query);
   };
 
-  // Trigger search on mount or topic name changes
-  useEffect(() => {
-    handleYoutubeSearch(topicName);
-  }, [topicName]);
-
-  // Direct YouTube Link loader
-  const loadCustomVideo = () => {
-    if (!customVideoQuery) return;
-    const videoId = extractYoutubeId(customVideoQuery) || customVideoQuery.trim();
-    if (videoId.length === 11) {
-      setBoardState(prev => ({
-        ...prev,
-        activeVideoId: videoId,
-        isVideoVisible: true,
-        activeTab: 'video',
-      }));
-      setCustomVideoQuery('');
-    } else {
-      alert("Please enter a valid YouTube Video URL or 11-character Video ID.");
-    }
+  // Leave Class handle
+  const handleLeaveClass = () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    onNext(); // Advance or exit
   };
 
-  // Synchronize whiteboard states across Teacher/Students
-  useEffect(() => {
-    if (studentInfo) return; // Student only listens
+  // ─── Phase 1: Pre-Join Room Screen ──────────────────────────────────────────
+  if (!preJoined) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-8 relative bg-[#0B0D19]">
+        <div className="orb orb-blue w-96 h-96 -top-24 -left-20" />
+        <div className="orb orb-purple w-96 h-96 -bottom-24 -right-20" />
 
-    if (db && classData?.sessionCode) {
-      updateDoc(doc(db, "sessions", classData.sessionCode), {
-        boardState: boardState,
-        liveTranscript: cumulativeTranscript,
-        isListening: isListening,
-      }).catch(err => console.error("Firestore sync boardState update failed:", err));
-    } else {
-      // Local sync via BroadcastChannel
-      const channel = new BroadcastChannel('classai_local_sync');
-      channel.postMessage({
-        type: 'BOARD_STATE_UPDATE',
-        payload: {
-          boardState,
-          liveTranscript: cumulativeTranscript,
-          isListening,
-        }
-      });
-      channel.close();
-    }
-  }, [boardState, cumulativeTranscript, isListening, studentInfo, classData?.sessionCode]);
+        <div className="w-full max-w-4xl glass border border-slate-200/80 shadow-2xl flex flex-col md:flex-row overflow-hidden relative z-10 rounded-2xl min-h-[480px]">
+          {/* Camera preview frame */}
+          <div className="md:w-3/5 bg-slate-900/60 p-6 flex flex-col justify-between border-b md:border-b-0 md:border-r border-slate-800 relative">
+            <div className="text-xs text-slate-400 font-mono tracking-wider mb-3 select-none flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-cyber-green animate-pulse" />
+              CAMERA & AUDIO PREVIEW
+            </div>
 
-  // Student listener for real-time synchronization
-  useEffect(() => {
-    if (!studentInfo) return; // Teacher doesn't listen
+            <div className="flex-1 rounded-xl bg-slate-950 overflow-hidden relative border border-slate-800 flex items-center justify-center min-h-[240px]">
+              {cameraOn && localStream ? (
+                <video
+                  ref={userVideoRef}
+                  autoPlay
+                  playsInline
+                  muted
+                  className="w-full h-full object-cover scale-x-[-1]"
+                />
+              ) : (
+                <div className="text-center p-4 select-none">
+                  <div className="w-16 h-16 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-500 mx-auto mb-3">
+                    <VideoOff size={24} />
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium font-sans">
+                    Camera is turned off
+                  </p>
+                </div>
+              )}
 
-    if (db && classData?.sessionCode) {
-      const sessionDocRef = doc(db, "sessions", classData.sessionCode);
-      const unsubscribe = onSnapshot(sessionDocRef, (snap) => {
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.boardState) {
-            setBoardState(data.boardState);
-          }
-          if (data.liveTranscript) {
-            setCumulativeTranscript(data.liveTranscript);
-          }
-          if (data.isListening !== undefined) {
-            setIsListening(data.isListening);
-          }
-        }
-      });
-      return () => unsubscribe();
-    } else {
-      const channel = new BroadcastChannel('classai_local_sync');
-      const handleMessage = (event) => {
-        const { type, payload } = event.data;
-        if (type === 'BOARD_STATE_UPDATE') {
-          if (payload.boardState) {
-            setBoardState(payload.boardState);
-          }
-          if (payload.liveTranscript) {
-            setCumulativeTranscript(payload.liveTranscript);
-          }
-          if (payload.isListening !== undefined) {
-            setIsListening(payload.isListening);
-          }
-        }
-      };
-      channel.addEventListener('message', handleMessage);
-      return () => {
-        channel.removeEventListener('message', handleMessage);
-        channel.close();
-      };
-    }
-  }, [classData?.sessionCode, studentInfo]);
+              {/* User indicator name tag overlay */}
+              <div className="absolute bottom-4 left-4 bg-slate-950/80 border border-slate-880 backdrop-blur-md px-3 py-1.5 rounded-lg text-xs font-semibold text-white">
+                {displayName}
+              </div>
+            </div>
 
-  // Topic session timer loop
-  useEffect(() => {
-    if (loading || topicComplete) return;
-    if (timeLeft <= 0) {
-      handleTopicComplete();
-      return;
-    }
-    const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [timeLeft, loading, topicComplete]);
+            {/* Media toggle toggles */}
+            <div className="flex justify-center gap-4 mt-5">
+              <button
+                type="button"
+                onClick={() => setMicOn(prev => !prev)}
+                className={`w-11 h-11 rounded-full flex items-center justify-center cursor-pointer transition-all border-none ${
+                  micOn 
+                    ? 'bg-slate-800 text-white hover:bg-slate-700' 
+                    : 'bg-error text-white hover:bg-error/95 shadow-lg shadow-error/20'
+                }`}
+                title={micOn ? "Mute Microphone" : "Unmute Microphone"}
+              >
+                {micOn ? <Mic size={18} /> : <MicOff size={18} />}
+              </button>
 
-  const handleTopicComplete = useCallback(() => {
-    setTopicComplete(true);
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
-      setIsListening(false);
-    }
-  }, [isListening]);
+              <button
+                type="button"
+                onClick={() => setCameraOn(prev => !prev)}
+                className={`w-11 h-11 rounded-full flex items-center justify-center cursor-pointer transition-all border-none ${
+                  cameraOn 
+                    ? 'bg-slate-800 text-white hover:bg-slate-700' 
+                    : 'bg-error text-white hover:bg-error/95 shadow-lg shadow-error/20'
+                }`}
+                title={cameraOn ? "Disable Camera" : "Enable Camera"}
+              >
+                {cameraOn ? <Video size={18} /> : <VideoOff size={18} />}
+              </button>
+            </div>
+          </div>
 
-  // Quiz auto-navigation transition countdown
-  useEffect(() => {
-    if (!topicComplete || studentInfo) return;
-    if (transitionCountdown <= 0) {
-      handleNext();
-      return;
-    }
-    const timer = setTimeout(() => {
-      setTransitionCountdown(c => c - 1);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [topicComplete, transitionCountdown, studentInfo]);
+          {/* Join settings form */}
+          <div className="md:w-2/5 p-8 flex flex-col justify-center select-none text-left">
+            <div className="mb-6">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-accent-500/10 border border-accent-500/20 text-accent-600 text-xs font-semibold mb-3">
+                <Sparkles size={13} />
+                <span>Zoom Classroom Portal</span>
+              </div>
+              <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight leading-none font-display">
+                Ready to Join?
+              </h1>
+              <p className="text-xs text-slate-500 mt-1.5 leading-relaxed">
+                Connect to topic: <span className="text-accent-600 font-bold">{topicName}</span>
+              </p>
+            </div>
 
-  const handleNext = () => {
-    if (db && classData?.sessionCode && !studentInfo) {
-      updateDoc(doc(db, "sessions", classData.sessionCode), {
-        status: 'quiz'
-      }).catch(err => console.error("Firestore quiz transition failed:", err));
-    } else if (!db && classData?.sessionCode && !studentInfo) {
-      const channel = new BroadcastChannel('classai_local_sync');
-      channel.postMessage({
-        type: 'SESSION_STATE_UPDATE',
-        payload: { status: 'quiz' }
-      });
-      channel.close();
-    }
-    onNext();
-  };
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-600 uppercase tracking-widest block mb-2 font-mono">
+                  Your Meeting Display Name
+                </label>
+                <input
+                  type="text"
+                  className="input-dark bg-white/70"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="Enter your name..."
+                />
+              </div>
 
-  const formatTime = (secs) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
+              <button
+                type="button"
+                onClick={handleJoin}
+                className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-base font-bold shadow-lg shadow-accent-500/25 border-none cursor-pointer hover:scale-102 transition-all"
+                style={{ background: 'linear-gradient(135deg, var(--color-accent-600), var(--color-accent-500))' }}
+              >
+                <span>Join Meeting</span>
+                <Check size={18} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const saveSettings = () => {
-    onSaveApiKey(keyInput.trim());
-    onSaveUnsplashClientId(unsplashInput.trim());
-    setSettingsSaved(true);
-    setTimeout(() => {
-      setSettingsSaved(false);
-      setShowKeyPanel(false);
-    }, 1200);
-  };
-
-  // Local SVGs for dynamic schematics on board
-  const renderWhiteboardSchematic = () => {
-    const indexKey = currentTopicIndex % 6;
-    switch (indexKey) {
-      case 0: // Neural Networks
-        return (
-          <svg viewBox="0 0 400 160" className="w-full h-full fill-none" strokeWidth="1.5">
-            <style>{`
-              @keyframes dash {
-                to { stroke-dashoffset: -20; }
-              }
-              .pulse-line {
-                stroke: #3b82f6;
-                stroke-dasharray: 4 6;
-                animation: dash 1.5s linear infinite;
-              }
-              .pulse-line-fast {
-                stroke: #ec4899;
-                stroke-dasharray: 4 6;
-                animation: dash 1s linear infinite;
-              }
-              @keyframes nodePulse {
-                0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(59,130,246,0.3)); }
-                50% { transform: scale(1.1); filter: drop-shadow(0 0 6px rgba(59,130,246,0.7)); }
-              }
-              .node-pulse {
-                transform-origin: center;
-                animation: nodePulse 2.5s ease-in-out infinite;
-              }
-            `}</style>
-            
-            {/* Connection Lines */}
-            {/* Input to Hidden */}
-            <line x1="80" y1="50" x2="200" y2="30" className="pulse-line" />
-            <line x1="80" y1="50" x2="200" y2="80" className="pulse-line-fast" />
-            <line x1="80" y1="50" x2="200" y2="130" className="pulse-line" />
-            <line x1="80" y1="110" x2="200" y2="30" className="pulse-line" />
-            <line x1="80" y1="110" x2="200" y2="80" className="pulse-line" />
-            <line x1="80" y1="110" x2="200" y2="130" className="pulse-line-fast" />
-            
-            {/* Hidden to Output */}
-            <line x1="200" y1="30" x2="320" y2="80" className="pulse-line" />
-            <line x1="200" y1="80" x2="320" y2="80" className="pulse-line-fast" />
-            <line x1="200" y1="130" x2="320" y2="80" className="pulse-line" />
-            
-            {/* Nodes */}
-            {/* Input Layer */}
-            <circle cx="80" cy="50" r="10" className="fill-blue-50 stroke-blue-500 node-pulse" />
-            <circle cx="80" cy="110" r="10" className="fill-blue-50 stroke-blue-500 node-pulse" />
-            <text x="50" y="53" className="fill-blue-600 font-mono text-[8px] font-bold">In x1</text>
-            <text x="50" y="113" className="fill-blue-600 font-mono text-[8px] font-bold">In x2</text>
-            
-            {/* Hidden Layer */}
-            <circle cx="200" cy="30" r="10" className="fill-purple-50 stroke-purple-500 node-pulse" />
-            <circle cx="200" cy="80" r="10" className="fill-purple-50 stroke-purple-500 node-pulse" />
-            <circle cx="200" cy="130" r="10" className="fill-purple-50 stroke-purple-500 node-pulse" />
-            <text x="195" y="33" className="fill-purple-700 font-mono text-[8px] font-bold">h1</text>
-            <text x="195" y="83" className="fill-purple-700 font-mono text-[8px] font-bold">h2</text>
-            <text x="195" y="133" className="fill-purple-700 font-mono text-[8px] font-bold">h3</text>
-            
-            {/* Output Layer */}
-            <circle cx="320" cy="80" r="10" className="fill-pink-50 stroke-pink-500 node-pulse" />
-            <text x="338" y="83" className="fill-pink-600 font-mono text-[8px] font-bold">Out y</text>
-            
-            {/* Labels */}
-            <text x="70" y="15" className="fill-slate-400 font-mono text-[7px] tracking-widest font-bold">INPUTS</text>
-            <text x="180" y="15" className="fill-slate-400 font-mono text-[7px] tracking-widest font-bold">HIDDEN LAYERS</text>
-            <text x="300" y="15" className="fill-slate-400 font-mono text-[7px] tracking-widest font-bold">OUTPUT</text>
-          </svg>
-        );
-      case 1: // Supervised Learning
-        return (
-          <svg viewBox="0 0 400 160" className="w-full h-full fill-none" strokeWidth="1.5">
-            <style>{`
-              @keyframes sweepLine {
-                0%, 100% { transform: rotate(-3deg); }
-                50% { transform: rotate(5deg); }
-              }
-              .bound-line {
-                stroke: #10b981;
-                transform-origin: 200px 80px;
-                animation: sweepLine 5s ease-in-out infinite;
-              }
-              @keyframes blinkNode {
-                0%, 100% { opacity: 0.5; }
-                50% { opacity: 1; }
-              }
-              .group-a { fill: #ef4444; stroke: #b91c1c; }
-              .group-b { fill: #3b82f6; stroke: #1d4ed8; }
-              .blink-dot { animation: blinkNode 2s infinite ease-in-out; }
-            `}</style>
-            
-            {/* Graph Grid */}
-            <path d="M 50 130 L 350 130 M 50 20 L 50 130" stroke="#cbd5e1" strokeWidth="1" />
-            
-            {/* Group A (Red Circles - e.g., Class 0) */}
-            <circle cx="80" cy="40" r="6" className="group-a blink-dot" />
-            <circle cx="110" cy="60" r="6" className="group-a" />
-            <circle cx="130" cy="35" r="6" className="group-a" />
-            <circle cx="150" cy="70" r="6" className="group-a blink-dot" />
-            
-            {/* Group B (Blue Circles - e.g., Class 1) */}
-            <circle cx="250" cy="95" r="6" className="group-b" />
-            <circle cx="280" cy="110" r="6" className="group-b blink-dot" />
-            <circle cx="300" cy="80" r="6" className="group-b" />
-            <circle cx="320" cy="105" r="6" className="group-b blink-dot" />
-            
-            {/* Interactive Classification Boundary */}
-            <line x1="60" y1="110" x2="340" y2="50" className="bound-line" strokeWidth="2.5" />
-            
-            <text x="180" y="120" className="fill-emerald-600 font-mono text-[8px] font-bold">Decision Boundary</text>
-            <text x="70" y="25" className="fill-red-500 font-mono text-[7px] font-bold">Class A (Red)</text>
-            <text x="280" y="25" className="fill-blue-500 font-mono text-[7px] font-bold">Class B (Blue)</text>
-          </svg>
-        );
-      case 2: // Unsupervised Learning
-        return (
-          <svg viewBox="0 0 400 160" className="w-full h-full fill-none" strokeWidth="1.5">
-            <style>{`
-              @keyframes centroid1 {
-                0%, 100% { transform: translate(0px, 0px); }
-                50% { transform: translate(15px, -10px); }
-              }
-              @keyframes centroid2 {
-                0%, 100% { transform: translate(0px, 0px); }
-                50% { transform: translate(-15px, 10px); }
-              }
-              .centroid-red {
-                stroke: #ef4444;
-                fill: #fee2e2;
-                animation: centroid1 4s ease-in-out infinite;
-              }
-              .centroid-blue {
-                stroke: #3b82f6;
-                fill: #dbe1ff;
-                animation: centroid2 4s ease-in-out infinite;
-              }
-              @keyframes pulseLine {
-                0%, 100% { stroke-opacity: 0.2; }
-                50% { stroke-opacity: 0.7; }
-              }
-              .cluster-line {
-                stroke: #cbd5e1;
-                stroke-dasharray: 2 2;
-                animation: pulseLine 2s infinite ease-in-out;
-              }
-            `}</style>
-            
-            {/* Cluster 1 Nodes */}
-            <circle cx="80" cy="40" r="5" className="fill-red-200 stroke-red-400" />
-            <circle cx="100" cy="70" r="5" className="fill-red-200 stroke-red-400" />
-            <circle cx="130" cy="30" r="5" className="fill-red-200 stroke-red-400" />
-            <circle cx="140" cy="65" r="5" className="fill-red-200 stroke-red-400" />
-            
-            {/* Cluster 2 Nodes */}
-            <circle cx="260" cy="110" r="5" className="fill-blue-200 stroke-blue-400" />
-            <circle cx="280" cy="80" r="5" className="fill-blue-200 stroke-blue-400" />
-            <circle cx="310" cy="120" r="5" className="fill-blue-200 stroke-blue-400" />
-            <circle cx="330" cy="90" r="5" className="fill-blue-200 stroke-blue-400" />
-            
-            {/* Centroids */}
-            <polygon points="110,45 115,55 105,55" className="centroid-red" strokeWidth="2" />
-            <polygon points="295,95 300,105 290,105" className="centroid-blue" strokeWidth="2" />
-            
-            <text x="95" y="30" className="fill-red-600 font-mono text-[7px] font-bold">Cluster 1 Centroid</text>
-            <text x="270" y="130" className="fill-blue-600 font-mono text-[7px] font-bold">Cluster 2 Centroid</text>
-            
-            <text x="135" y="145" className="fill-slate-400 font-mono text-[7px] font-bold uppercase tracking-wider">K-Means Grouping</text>
-          </svg>
-        );
-      case 3: // Decision Trees
-        return (
-          <svg viewBox="0 0 400 160" className="w-full h-full fill-none" strokeWidth="1.5">
-            <style>{`
-              @keyframes activePath {
-                0%, 100% { stroke-dashoffset: 30; stroke: #cbd5e1; }
-                40% { stroke-dashoffset: 0; stroke: #3b82f6; }
-                80% { stroke-dashoffset: 0; stroke: #10b981; }
-              }
-              .branch-left {
-                stroke-dasharray: 10 20;
-                animation: activePath 4s infinite linear;
-              }
-              @keyframes activeNode {
-                0%, 100% { fill: #ffffff; stroke: #94a3b8; }
-                20% { fill: #e0f2fe; stroke: #3b82f6; }
-                60% { fill: #d1fae5; stroke: #10b981; }
-              }
-              .node-root { animation: activeNode 4s infinite 0s ease-in-out; }
-              .node-left { animation: activeNode 4s infinite 1.3s ease-in-out; }
-              .node-leaf-left { animation: activeNode 4s infinite 2.6s ease-in-out; }
-            `}</style>
-            
-            {/* Tree Branch Lines */}
-            <line x1="200" y1="30" x2="120" y2="80" className="branch-left" strokeWidth="2.5" />
-            <line x1="200" y1="30" x2="280" y2="80" stroke="#cbd5e1" />
-            <line x1="120" y1="80" x2="70" y2="130" className="branch-left" strokeWidth="2.5" />
-            <line x1="120" y1="80" x2="170" y2="130" stroke="#cbd5e1" />
-            
-            {/* Root Node */}
-            <circle cx="200" cy="30" r="12" className="node-root fill-white stroke-slate-400" />
-            <text x="188" y="33" className="fill-slate-700 font-mono text-[8px] font-bold">X1 &lt; 5</text>
-            
-            {/* Level 1 Nodes */}
-            <circle cx="120" cy="80" r="12" className="node-left fill-white stroke-slate-400" />
-            <text x="108" y="83" className="fill-slate-700 font-mono text-[8px] font-bold">X2 &lt; 2</text>
-            
-            <circle cx="280" cy="80" r="12" className="fill-white stroke-slate-300" />
-            <text x="265" y="83" className="fill-slate-450 font-mono text-[8px] font-bold">Class B</text>
-            
-            {/* Level 2 Leaves */}
-            <circle cx="70" cy="130" r="12" className="node-leaf-left fill-white stroke-slate-400" />
-            <text x="55" y="133" className="fill-slate-700 font-mono text-[8px] font-bold">Class A</text>
-            
-            <circle cx="170" cy="130" r="12" className="fill-white stroke-slate-300" />
-            <text x="155" y="133" className="fill-slate-450 font-mono text-[8px] font-bold">Class B</text>
-            
-            <text x="125" y="45" className="fill-blue-500 font-mono text-[7px] font-bold">True</text>
-            <text x="250" y="45" className="fill-slate-400 font-mono text-[7px] font-bold">False</text>
-          </svg>
-        );
-      case 4: // Overfitting & Underfitting
-        return (
-          <svg viewBox="0 0 400 160" className="w-full h-full fill-none" strokeWidth="1.5">
-            <style>{`
-              @keyframes drawLines {
-                0%, 100% { stroke-dashoffset: 400; }
-                50% { stroke-dashoffset: 0; }
-              }
-              .clean-curve {
-                stroke: #10b981;
-                stroke-dasharray: 400;
-                animation: drawLines 6s ease-in-out infinite;
-              }
-              .overfit-curve {
-                stroke: #ef4444;
-                stroke-dasharray: 450;
-                animation: drawLines 6s ease-in-out infinite alternate;
-              }
-            `}</style>
-            
-            {/* Plot axes */}
-            <path d="M 40 130 L 360 130 M 40 20 L 40 130" stroke="#cbd5e1" strokeWidth="1" />
-            
-            {/* Noisy training data dots */}
-            <circle cx="70" cy="110" r="4" className="fill-slate-800 stroke-slate-900" />
-            <circle cx="110" cy="80" r="4" className="fill-slate-800 stroke-slate-900" />
-            <circle cx="160" cy="90" r="4" className="fill-slate-800 stroke-slate-900" />
-            <circle cx="210" cy="50" r="4" className="fill-slate-800 stroke-slate-900" />
-            <circle cx="270" cy="70" r="4" className="fill-slate-800 stroke-slate-900" />
-            <circle cx="320" cy="30" r="4" className="fill-slate-800 stroke-slate-900" />
-            
-            {/* Clean quadratic trend line (Generalization) */}
-            <path d="M 50 125 Q 160 95 340 30" className="clean-curve" strokeWidth="2.5" />
-            
-            {/* Erratic high degree overfitting line */}
-            <path d="M 50 120 C 70 110 90 60 110 80 C 130 100 145 95 160 90 C 185 80 200 40 210 50 C 220 60 250 85 270 70 C 290 55 310 25 330 35" className="overfit-curve" strokeWidth="1.5" />
-            
-            <text x="210" y="115" className="fill-emerald-600 font-mono text-[7px] font-bold">Balanced Fit (Green)</text>
-            <text x="210" y="125" className="fill-red-500 font-mono text-[7px] font-bold">Overfitting (Red - High Variance)</text>
-          </svg>
-        );
-      case 5: // Model Evaluation
-        return (
-          <svg viewBox="0 0 400 160" className="w-full h-full fill-none" strokeWidth="1.5">
-            <style>{`
-              @keyframes slideDot {
-                0%, 100% { transform: translate(0px, 0px); }
-                50% { transform: translate(110px, -70px); }
-              }
-              .slider-dot {
-                fill: #ec4899;
-                stroke: #ffffff;
-                stroke-width: 2;
-                animation: slideDot 4s ease-in-out infinite;
-              }
-            `}</style>
-            
-            {/* Axes */}
-            <path d="M 60 130 L 320 130 M 60 20 L 60 130" stroke="#cbd5e1" strokeWidth="1" />
-            
-            {/* Random guess diagonal line */}
-            <line x1="60" y1="130" x2="300" y2="20" stroke="#cbd5e1" strokeDasharray="3 3" />
-            
-            {/* ROC Curve path */}
-            <path id="rocCurve" d="M 60 130 Q 75 40 300 20" stroke="#3b82f6" strokeWidth="3" />
-            
-            {/* Animated threshold selection marker */}
-            <circle cx="100" cy="90" r="6" className="slider-dot" />
-            
-            <text x="200" y="70" className="fill-blue-600 font-mono text-[8px] font-bold">ROC Curve (AUC = 0.91)</text>
-            <text x="195" y="120" className="fill-slate-400 font-mono text-[7px]">False Positive Rate</text>
-            <text x="25" y="75" className="fill-slate-400 font-mono text-[7px]" transform="rotate(-90 25 75)">True Positive Rate</text>
-          </svg>
-        );
-      default:
-        return null;
-    }
-  };
+  // ─── Phase 2: Zoom-Style Meeting Room Screen ──────────────────────────────────
 
   return (
-    <div className="flex-1 flex flex-col relative">
-      <div className="orb orb-blue w-80 h-80 -top-20 -left-20" />
-      <div className="orb orb-purple w-80 h-80 bottom-0 -right-20" />
-
-      {/* Header */}
-      <div className="glass-light border-b border-slate-200/80 px-4 sm:px-6 py-3.5 flex items-center justify-between z-20 shadow-sm">
+    <div className="flex-1 flex flex-col bg-[#0B0D16] text-white relative select-none">
+      
+      {/* Top Header Bar */}
+      <div className="h-14 bg-slate-950/80 border-b border-slate-900/60 backdrop-blur-md px-6 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-success animate-pulse" />
-          <span className="text-sm font-semibold text-slate-800 tracking-wide">
-            {classData?.title || 'ClassAI Room'}
-          </span>
-          <span className="text-xs text-slate-550">•</span>
-          <span className="text-xs font-mono font-bold text-accent-600">
-            Session: {classData?.sessionCode}
-          </span>
-          {studentInfo ? (
-            <span className="bg-slate-100 text-slate-500 border border-slate-250 font-bold px-2 py-0.5 rounded text-[10px] font-mono">
-              STUDENT ROLE
-            </span>
-          ) : (
-            <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 font-bold px-2 py-0.5 rounded text-[10px] font-mono">
-              TEACHER CONTROL
-            </span>
-          )}
-        </div>
-        
-        <div className="flex items-center gap-3">
-          {/* Key config panel */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setShowKeyPanel(!showKeyPanel)}
-              className={`p-2 rounded-lg transition-all duration-300 cursor-pointer flex items-center gap-1.5 border border-slate-200/40 text-xs font-semibold ${
-                apiKey
-                  ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200/50' 
-                  : 'bg-warning/10 text-warning hover:bg-warning/20 border-warning/20'
-              }`}
-            >
-              <Key size={14} />
-              <span className="hidden sm:inline">
-                {apiKey ? 'API Connected' : 'Setup Gemini API Key'}
-              </span>
-            </button>
-            
-            {showKeyPanel && (
-              <div className="absolute right-0 mt-2 w-80 p-4 rounded-xl glass border border-slate-200 shadow-2xl z-50 animate-slide-up" style={{ backgroundColor: 'rgba(255, 255, 255, 0.95)' }}>
-                <h3 className="text-sm font-bold text-slate-800 mb-2 flex items-center gap-1.5 font-display">
-                  <Sparkles size={14} className="text-accent-500" />
-                  Gemini API Configuration
-                </h3>
-                <p className="text-xs text-slate-550 mb-3 leading-relaxed">
-                  Keys are stored locally in your browser.
-                </p>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 uppercase font-mono block mb-1">
-                      Gemini API Key
-                    </label>
-                    <input
-                      type="password"
-                      className="input-dark !py-2 !text-xs w-full px-2"
-                      placeholder="Enter Gemini API Key..."
-                      value={keyInput}
-                      onChange={(e) => setKeyInput(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold text-slate-500 uppercase font-mono block mb-1">
-                      Unsplash Client ID (Optional)
-                    </label>
-                    <input
-                      type="password"
-                      className="input-dark !py-2 !text-xs w-full px-2"
-                      placeholder="Unsplash Access Key"
-                      value={unsplashInput}
-                      onChange={(e) => setUnsplashInput(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex justify-end gap-2 pt-1">
-                    <button
-                      type="button"
-                      onClick={() => setShowKeyPanel(false)}
-                      className="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-800 border-none cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={saveSettings}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-accent-500 hover:bg-accent-600 text-white border-none cursor-pointer flex items-center gap-1"
-                    >
-                      {settingsSaved ? <Check size={12} /> : null}
-                      {settingsSaved ? 'Saved!' : 'Save Credentials'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent-600 to-cyber-purple flex items-center justify-center font-display font-bold text-sm text-white">
+            Z
+          </div>
+          <div>
+            <h2 className="text-sm font-bold text-white tracking-wide">
+              {classData?.title || 'ClassAI Room'}
+            </h2>
+            <p className="text-[10px] text-slate-400 font-mono mt-0.5">
+              Lecture Topic: {topicName} ({currentSegmentIdx + 1}/{segments.length})
+            </p>
           </div>
         </div>
+
+        {/* Live sharing status indicator */}
+        {activeSegment && (
+          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-cyber-green/10 border border-cyber-green/20 text-cyber-green text-[10px] font-bold tracking-wider font-mono">
+            <span className="w-1.5 h-1.5 rounded-full bg-cyber-green animate-ping shrink-0" />
+            AI TEACHER IS SHARING
+          </div>
+        )}
       </div>
 
-      {/* Main Split Grid */}
-      <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 px-4 sm:px-6 py-6 gap-6 relative z-10 overflow-hidden">
-        {/* Left whiteboard area (8/12 cols) */}
-        <div className="lg:col-span-9 flex flex-col gap-6">
-          <div className="bg-white text-slate-900 border border-slate-200 shadow-xl rounded-2xl p-6 md:p-8 flex flex-col justify-between relative overflow-hidden transition-all duration-300 min-h-[500px]">
-            {/* Whiteboard Grid lines */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808005_1px,transparent_1px),linear-gradient(to_bottom,#80808005_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none" />
-
-            {topicComplete ? (
-              <div className="flex-1 flex flex-col items-center justify-center text-center relative z-10 animate-slide-up">
-                <div className="w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-200 mb-6">
-                  <Check size={36} className="text-success" />
-                </div>
-                <h1 className="text-2xl font-extrabold text-slate-800 tracking-tight mb-2">
-                  Topic Lecture Complete!
-                </h1>
-                <p className="text-slate-550 text-sm max-w-sm mb-6 leading-relaxed">
-                  Excellent work. A brief assessment based on this dynamic explanation will follow.
-                </p>
-                {studentInfo ? (
-                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 font-mono">
-                    <Clock size={14} className="text-accent-500 animate-pulse" />
-                    WAITING FOR TEACHER TO LAUNCH QUIZ
-                  </div>
-                ) : (
-                  <div className="flex flex-col sm:flex-row items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleNext}
-                      className="btn-primary flex items-center justify-center gap-2 text-sm !px-6 !py-2.5 cursor-pointer border-none"
-                    >
-                      Start Quiz
-                      <ChevronRight size={15} />
-                    </button>
-                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-50 border border-slate-200 text-xs font-bold text-slate-600 font-mono">
-                      <Clock size={14} className="text-accent-500 animate-spin" />
-                      AUTO TRANSITION IN {transitionCountdown}S
+      {/* Main Grid View */}
+      <div className="flex-1 flex overflow-hidden relative">
+        
+        {/* Left Column: Large Shared Content Zone */}
+        <div className="flex-1 bg-[#090A10] p-4 flex flex-col justify-between relative overflow-hidden">
+          {loading ? (
+            <div className="m-auto text-center">
+              <div className="w-10 h-10 rounded-full border-4 border-slate-700 border-t-accent-500 animate-spin mb-3 mx-auto" />
+              <p className="text-xs text-slate-500 font-mono">Formulating AI lecture segments...</p>
+            </div>
+          ) : activeSegment ? (
+            <div className="w-full h-full flex flex-col justify-between max-w-5xl mx-auto relative z-10 animate-fade-in">
+              
+              {/* Media Container box */}
+              <div className="flex-1 rounded-2xl bg-slate-950/90 overflow-hidden border border-slate-800/80 relative flex items-center justify-center shadow-2xl shadow-black/60 group">
+                {activeSegment.mediaType === 'image' && sharedImage ? (
+                  <img
+                    src={sharedImage}
+                    alt={activeSegment.title}
+                    className="w-full h-full object-contain object-center transition-all duration-700 group-hover:scale-102"
+                  />
+                ) : activeSegment.mediaType === 'video' && sharedVideoId ? (
+                  <div className="w-full h-full flex flex-col justify-between bg-slate-950/80 relative z-10 select-none overflow-hidden animate-fade-in">
+                    {/* Proper video player playing from the proxy */}
+                    <div className="w-full flex-1 bg-black relative min-h-0">
+                      <video 
+                        ref={videoRef}
+                        src={`/api/youtube-proxy?videoId=${sharedVideoId}`}
+                        controls
+                        autoPlay
+                        className="w-full h-full object-contain"
+                        preload="auto"
+                      />
                     </div>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="flex-1 flex flex-col justify-between relative z-10">
-                {/* Whiteboard Header */}
-                <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-4">
-                  <div className="flex items-center gap-2 text-slate-500 text-xs font-bold font-mono">
-                    <Lightbulb size={13} className="text-accent-500" />
-                    LIVE WHITEBOARD
-                  </div>
-                  {isListening && (
-                    <div className="flex items-center gap-1.5 text-xs text-error font-bold font-mono animate-pulse">
-                      <span className="w-2 h-2 rounded-full bg-error" />
-                      TEACHER SPEECH ACTIVE
-                    </div>
-                  )}
-                </div>
-
-                {/* Whiteboard split layout */}
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch overflow-y-auto">
-                  {/* Left Column (7 of 12) - Slides & text */}
-                  <div className="md:col-span-7 flex flex-col justify-start">
-                    <h2 className="text-slate-800 text-xl font-bold tracking-tight mb-4 flex items-center gap-2 border-b border-slate-50 pb-2 font-display">
-                      <Sparkles className="w-5 h-5 text-accent-500 shrink-0" />
-                      {boardState.title}
-                    </h2>
                     
-                    <ul className="space-y-3 flex-1">
-                      {boardState.bulletPoints?.map((bp, bpIdx) => (
-                        <li 
-                          key={bpIdx}
-                          className="flex items-start gap-2.5 text-slate-700 text-sm sm:text-base leading-relaxed animate-fade-in"
-                        >
-                          <span className="w-2 h-2 rounded-full bg-accent-500 shrink-0 mt-2" />
-                          <span className="font-medium text-slate-700 leading-normal">{bp}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Right Column (5 of 12) - Graphics, visual, video tabs */}
-                  <div className="md:col-span-5 flex flex-col gap-3">
-                    {/* Tab Navigation */}
-                    <div className="flex border border-slate-200 rounded-lg p-1 bg-slate-50 gap-1 select-none">
-                      <button
-                        type="button"
-                        onClick={() => setBoardState(prev => ({ ...prev, activeTab: 'schematic' }))}
-                        className={`flex-1 py-1 text-[10px] font-bold uppercase font-mono tracking-wider rounded-md cursor-pointer border-none transition-all duration-200 ${
-                          boardState.activeTab === 'schematic' 
-                            ? 'bg-white text-slate-800 shadow-sm' 
-                            : 'text-slate-400 hover:text-slate-600 bg-transparent'
-                        }`}
-                      >
-                        Schematic
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setBoardState(prev => ({ ...prev, activeTab: 'illustration' }))}
-                        className={`flex-1 py-1 text-[10px] font-bold uppercase font-mono tracking-wider rounded-md cursor-pointer border-none transition-all duration-200 ${
-                          boardState.activeTab === 'illustration' 
-                            ? 'bg-white text-slate-800 shadow-sm' 
-                            : 'text-slate-400 hover:text-slate-600 bg-transparent'
-                        }`}
-                      >
-                        Illustration
-                      </button>
-                      <button
-                        type="button"
-                        disabled={!boardState.activeVideoId}
-                        onClick={() => setBoardState(prev => ({ ...prev, activeTab: 'video' }))}
-                        className={`flex-1 py-1 text-[10px] font-bold uppercase font-mono tracking-wider rounded-md cursor-pointer border-none transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed ${
-                          boardState.activeTab === 'video' 
-                            ? 'bg-white text-slate-800 shadow-sm' 
-                            : 'text-slate-400 hover:text-slate-600 bg-transparent'
-                        }`}
-                      >
-                        Video Reference
-                      </button>
+                    {/* Details section below */}
+                    <div className="p-5 border-t border-slate-900 bg-slate-950/95 flex flex-col select-none text-left shrink-0">
+                      <h4 className="text-base font-bold text-white leading-snug truncate">
+                        {videoTitle || `Watch Video: ${activeSegment.title}`}
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1 flex items-center gap-1.5 font-sans">
+                        <span className="w-2.5 h-2.5 rounded-full bg-accent-500/20 text-accent-500 flex items-center justify-center font-mono font-bold text-[8px]">C</span>
+                        {channelName || `Educational Creator`}
+                      </p>
                     </div>
-
-                    {/* Tab Contents */}
-                    <div className="flex-1 border border-slate-200 rounded-xl p-3 bg-slate-50/50 shadow-inner flex flex-col items-center justify-center min-h-[160px] relative overflow-hidden">
-                      {boardState.activeTab === 'schematic' && (
-                        <div className="w-full flex-1 flex flex-col justify-between h-full">
-                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest font-mono text-center block mb-1">
-                            Dynamic Vector Blueprint
-                          </span>
-                          <div className="w-full flex-1 flex items-center justify-center min-h-[100px]">
-                            {renderWhiteboardSchematic()}
-                          </div>
-                          {boardState.visualDescription && (
-                            <p className="text-[9px] text-slate-500 font-semibold font-mono mt-1 text-center leading-tight">
-                              {boardState.visualDescription}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {boardState.activeTab === 'illustration' && (
-                        <div className="w-full h-full flex-1 flex flex-col justify-between relative">
-                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest font-mono text-center block mb-1">
-                            Unsplash Topic Photo
-                          </span>
-                          <div className="w-full flex-1 relative rounded-lg overflow-hidden border border-slate-200 bg-slate-100 flex items-center justify-center">
-                            {unsplashLoading ? (
-                              <div className="animate-pulse flex flex-col items-center">
-                                <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin mb-1" />
-                                <span className="text-[8px] font-mono text-slate-500">Searching Photos...</span>
-                              </div>
-                            ) : unsplashImage ? (
-                              <img src={unsplashImage} alt={boardState.title} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="flex flex-col items-center text-slate-400">
-                                <Image size={24} className="opacity-40 mb-1" />
-                                <span className="text-[9px] font-bold uppercase tracking-wider font-mono">No Image Available</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
-
-                      {boardState.activeTab === 'video' && (
-                        <div className="w-full h-full flex-1 flex flex-col">
-                          {boardState.activeVideoId && boardState.isVideoVisible ? (
-                            <iframe
-                              className="w-full flex-1 rounded-lg border border-slate-200"
-                              src={`https://www.youtube.com/embed/${boardState.activeVideoId}?enablejsapi=1&autoplay=1`}
-                              title="YouTube video player"
-                              frameBorder="0"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                              allowFullScreen
-                            />
-                          ) : (
-                            <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
-                              <MonitorPlay size={28} className="opacity-30 mb-2" />
-                              <span className="text-[9px] font-bold font-mono uppercase tracking-wider">Video Projection Stopped</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Marker board tray styling */}
-                <div className="absolute bottom-0 inset-x-0 h-4 bg-slate-300 border-t border-slate-400 flex justify-center items-center shadow-inner select-none pointer-events-none rounded-b-2xl">
-                  <div className="w-12 h-2 bg-blue-600 rounded-sm mx-1 shadow-sm opacity-90" />
-                  <div className="w-12 h-2 bg-red-600 rounded-sm mx-1 shadow-sm opacity-90" />
-                  <div className="w-12 h-2 bg-slate-800 rounded-sm mx-1 shadow-sm opacity-90" />
-                  <div className="w-10 h-3 bg-slate-100 border border-slate-400 rounded-sm mx-4 shadow-sm flex items-center justify-center text-[5px] text-slate-400 font-bold tracking-tighter">ERASER</div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Live transcript log */}
-          <div className="glass-light border border-slate-200/65 rounded-2xl p-4 shadow-md flex flex-col gap-2.5">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100/60">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-accent-500 animate-pulse" />
-                <h3 className="text-xs font-bold text-slate-800 tracking-wide uppercase font-mono">
-                  Live Classroom Transcription Feed
-                </h3>
-              </div>
-              <span className={`text-[9px] border px-2 py-0.5 rounded-full font-bold uppercase tracking-wider font-mono ${
-                isListening 
-                  ? 'bg-error/10 border-error/20 text-error animate-pulse' 
-                  : 'bg-slate-100 border-slate-250 text-slate-500'
-              }`}>
-                {isListening ? '🎤 Mic Streaming' : '🎤 Microphone Inactive'}
-              </span>
-            </div>
-
-            <div className="max-h-24 min-h-[44px] overflow-y-auto pr-1 text-xs text-slate-650 leading-relaxed font-mono">
-              {cumulativeTranscript || interimTranscript ? (
-                <span>
-                  {cumulativeTranscript}
-                  {interimTranscript && (
-                    <span className="text-accent-500 font-semibold animate-pulse">{interimTranscript}</span>
-                  )}
-                </span>
-              ) : (
-                <span className="text-slate-400 italic">
-                  {studentInfo 
-                    ? "Awaiting teacher's live explanation..." 
-                    : "No transcription captured yet. Toggle your microphone below to start speaking!"}
-                </span>
-              )}
-            </div>
-
-            {/* Teacher manual simulation helper */}
-            {!studentInfo && (
-              <div className="flex gap-2 items-center border-t border-slate-100/40 pt-2 flex-wrap">
-                <div className="flex-1 flex gap-2">
-                  <input
-                    type="text"
-                    value={simulationText}
-                    onChange={(e) => setSimulationText(e.target.value)}
-                    placeholder="Simulate speech for testing... (e.g. 'A neuron calculates weighted sums.')"
-                    onKeyDown={(e) => e.key === 'Enter' && handleSimulateSpeech()}
-                    className="flex-1 py-1.5 px-3 rounded-lg border border-slate-200 bg-white/50 text-xs placeholder:text-slate-400 outline-none text-slate-850"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleSimulateSpeech}
-                    className="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 cursor-pointer"
-                  >
-                    Simulate Speech
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Teacher YouTube Search & Action panel */}
-          {!studentInfo && !topicComplete && (
-            <div className="glass-light border border-slate-200/65 rounded-2xl p-5 shadow-md flex flex-col gap-4">
-              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100/60 pb-3 gap-2">
-                <div className="flex items-center gap-2">
-                  <Video size={16} className="text-accent-500" />
-                  <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider font-mono">
-                    Teacher Reference YouTube Panel
-                  </h3>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] text-slate-500 font-semibold font-mono">AI Suggestion:</span>
-                  <span 
-                    onClick={() => handleYoutubeSearch(boardState.youtubeSearchQuery)}
-                    className="text-[10px] bg-accent-50 border border-accent-100 text-accent-700 font-bold px-2 py-0.5 rounded-md cursor-pointer hover:bg-accent-100 transition-all font-mono"
-                  >
-                    {boardState.youtubeSearchQuery || 'Search Query'}
-                  </span>
-                </div>
-              </div>
-
-              {/* URL loading vs normal search */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                <div className="md:col-span-8 flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-3 top-2.5 w-3.5 h-3.5 text-slate-400" />
-                    <input
-                      type="text"
-                      placeholder="Search YouTube reference videos..."
-                      className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-xl bg-white outline-none text-slate-850"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          handleYoutubeSearch(e.target.value);
-                        }
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="md:col-span-4 flex gap-2">
-                  <input
-                    type="text"
-                    value={customVideoQuery}
-                    onChange={(e) => setCustomVideoQuery(e.target.value)}
-                    placeholder="YouTube URL or Video ID"
-                    className="flex-1 px-3 py-2 text-xs border border-slate-200 rounded-xl bg-white outline-none text-slate-850"
-                  />
-                  <button
-                    type="button"
-                    onClick={loadCustomVideo}
-                    className="px-3 py-2 text-xs font-bold bg-accent-500 hover:bg-accent-600 text-white rounded-xl cursor-pointer border-none shadow-sm flex items-center gap-1"
-                  >
-                    <PlusCircle size={13} />
-                    Load
-                  </button>
-                </div>
-              </div>
-
-              {/* Video Search Results horizontal scroller */}
-              <div className="overflow-x-auto pb-1">
-                {youtubeSearching ? (
-                  <div className="flex items-center justify-center py-6 text-slate-400 gap-2">
-                    <div className="w-4 h-4 border-2 border-slate-200 border-t-accent-500 rounded-full animate-spin" />
-                    <span className="text-xs font-mono">Searching YouTube library...</span>
-                  </div>
-                ) : youtubeResults.length > 0 ? (
-                  <div className="flex gap-4 min-w-max">
-                    {youtubeResults.map((video) => (
-                      <div 
-                        key={video.videoId}
-                        onClick={() => selectVideo(video.videoId)}
-                        className={`w-52 p-2 rounded-xl border flex flex-col gap-2 hover:scale-[1.02] hover:shadow-md cursor-pointer transition-all duration-200 ${
-                          boardState.activeVideoId === video.videoId 
-                            ? 'bg-accent-500/5 border-accent-500/40 shadow-sm' 
-                            : 'bg-white border-slate-200 hover:border-slate-350'
-                        }`}
-                      >
-                        <img 
-                          src={video.thumbnail} 
-                          alt={video.title} 
-                          className="w-full h-24 object-cover rounded-lg border border-slate-100" 
-                        />
-                        <div className="flex flex-col gap-1 min-w-0">
-                          <p className="text-[10px] font-bold text-slate-850 truncate leading-tight">
-                            {video.title}
-                          </p>
-                          <p className="text-[8px] font-semibold text-slate-400 font-mono truncate">
-                            {video.author}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 ) : (
-                  <div className="text-center py-6 text-slate-400 text-xs font-semibold font-mono">
-                    No reference videos loaded. Try searching or enter a query above.
+                  <div className="text-center text-slate-650">
+                    <Sparkles size={28} className="animate-spin mx-auto mb-2 opacity-30 text-accent-500" />
+                    <span className="text-xs font-mono">Synchronizing shared feed...</span>
+                  </div>
+                )}
+
+                {/* Subtopic Banner overlay */}
+                <div className="absolute top-4 left-4 bg-slate-950/80 border border-slate-800 backdrop-blur-md px-4 py-2 rounded-xl text-left">
+                  <span className="text-[9px] text-accent-500 uppercase tracking-widest font-mono font-bold">Lecture Topic</span>
+                  <h3 className="text-sm font-bold text-white tracking-wide mt-0.5">{activeSegment.title}</h3>
+                </div>
+
+                {/* Visual description caption box (Always visible below the main content/banner area) */}
+                {activeSegment.caption && (
+                  <div className="absolute bottom-4 left-4 right-4 bg-slate-950/85 border border-slate-850 backdrop-blur-md px-3.5 py-2 rounded-xl text-left shadow-lg">
+                    <span className="text-[9px] font-bold text-accent-500 font-mono uppercase tracking-wider block mb-0.5">Visual Caption</span>
+                    <p className="text-slate-300 text-xs leading-normal font-sans">{activeSegment.caption}</p>
                   </div>
                 )}
               </div>
 
-              {/* Dynamic board toggles */}
-              {boardState.activeVideoId && (
-                <div className="flex gap-3 justify-end pt-2 border-t border-slate-100/40">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBoardState(prev => ({ ...prev, activeTab: prev.activeTab === 'video' ? 'schematic' : 'video' }));
-                    }}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold cursor-pointer border ${
-                      boardState.activeTab === 'video' 
-                        ? 'bg-cyber-purple/10 border-cyber-purple/20 text-cyber-purple' 
-                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
-                  >
-                    {boardState.activeTab === 'video' ? 'Hide Video Tab' : 'Show Video Tab'}
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBoardState(prev => ({ ...prev, isVideoVisible: !prev.isVideoVisible }));
-                    }}
-                    className={`px-4 py-2 rounded-lg text-xs font-bold cursor-pointer border ${
-                      boardState.isVideoVisible 
-                        ? 'bg-error/10 border-error/20 text-error' 
-                        : 'bg-success/15 border-success/30 text-success'
-                    }`}
-                  >
-                    {boardState.isVideoVisible ? 'Stop Projection' : 'Project Selected Video'}
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Right syllabus column (4/12 cols) */}
-        <div className="lg:col-span-3 flex flex-col">
-          <div className="glass p-5 flex-1 flex flex-col justify-between min-h-[400px] border border-slate-200/80 shadow-xl">
-            <div className="flex flex-col flex-1 overflow-hidden">
-              <div className="flex items-center gap-2 pb-4 border-b border-slate-200/60 mb-4">
-                <BookOpen size={16} className="text-cyber-purple" />
-                <h3 className="text-sm font-bold text-slate-800 tracking-wide uppercase">
-                  Class Syllabus
-                </h3>
-              </div>
-
-              <div className="space-y-2.5 overflow-y-auto flex-1 pr-1">
-                {classData?.topics?.map((topic, idx) => {
-                  const isActive = idx === currentTopicIndex;
-                  const isCompleted = idx < currentTopicIndex;
-                  
-                  let cardStyle = 'border-slate-200/60 bg-white/40 shadow-sm';
-                  let statusText = 'Upcoming';
-                  let statusColor = 'text-slate-500 border-slate-200 bg-slate-50';
-                  
-                  if (isActive) {
-                    cardStyle = 'border-accent-500/40 bg-accent-500/5 glow-accent';
-                    statusText = 'Currently Teaching';
-                    statusColor = 'text-accent-600 border-accent-500/20 bg-accent-500/10 animate-pulse';
-                  } else if (isCompleted) {
-                    cardStyle = 'border-success/20 bg-success/5 opacity-80';
-                    statusText = 'Completed';
-                    statusColor = 'text-success border-success/20 bg-success/10';
+              {/* Subtitles / AI Professor narration transcription at the bottom */}
+              <div className="h-16 mt-3 shrink-0 flex items-center justify-center px-6 rounded-xl bg-slate-950/40 border border-slate-900/60 backdrop-blur-sm relative overflow-hidden">
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-accent-500" />
+                <p className="text-slate-300 text-xs sm:text-sm leading-relaxed text-center italic font-sans max-w-3xl">
+                  {isAnsweringQuestion 
+                    ? `[Answering Question]: "${teacherAnsweringText}"`
+                    : `"${activeSegment.lectureText}"`
                   }
-
-                  return (
-                    <div
-                      key={idx}
-                      className={`p-3.5 rounded-xl border flex items-start gap-3 transition-all duration-300 ${cardStyle}`}
-                    >
-                      <span className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold font-mono shrink-0 ${
-                        isActive 
-                          ? 'bg-accent-500 text-white' 
-                          : isCompleted 
-                          ? 'bg-success/20 text-success' 
-                          : 'bg-navy-800 text-slate-500'
-                      }`}>
-                        {idx + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-semibold leading-tight truncate ${isActive ? 'text-slate-800 font-bold' : 'text-slate-655'}`}>
-                          {topic}
-                        </p>
-                        <span className={`inline-block border px-1.5 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider font-mono mt-1.5 ${statusColor}`}>
-                          {statusText}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+                </p>
               </div>
+
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom controls bar */}
-      <div className="glass-light border-t border-slate-200/80 px-4 sm:px-6 py-3.5 flex flex-col sm:flex-row items-center justify-between gap-3 z-20 shadow-md">
-        <div className="flex items-center gap-2.5 text-xs text-slate-655 font-medium">
-          <BookOpen size={14} className="text-accent-500" />
-          <span>Topic {currentTopicIndex + 1} of {totalTopics}:</span>
-          <span className="text-slate-800 font-bold">{topicName}</span>
-        </div>
-        
-        {/* Playback actions / Microphone active state */}
-        <div className="flex items-center gap-4">
-          {!studentInfo && (
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={toggleListening}
-                className={`px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm border transition-all duration-300 ${
-                  isListening 
-                    ? 'bg-error text-white hover:bg-error/90 border-error' 
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'
-                }`}
-              >
-                {isListening ? (
-                  <>
-                    <MicOff size={14} />
-                    Mute Microphone
-                  </>
-                ) : (
-                  <>
-                    <Mic size={14} />
-                    Start Live Lecture
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => generateBoardUpdate(speechTranscript)}
-                disabled={generatingBoard || !speechTranscript}
-                className="px-3 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 disabled:opacity-40 cursor-pointer"
-              >
-                {generatingBoard ? 'Syncing...' : 'Update Board Now'}
-              </button>
-
-              <label className="flex items-center gap-1.5 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={autoGenerate}
-                  onChange={(e) => setAutoGenerate(e.target.checked)}
-                  className="rounded border-slate-300 text-accent-500 focus:ring-accent-400"
-                />
-                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider font-mono">Auto Update</span>
-              </label>
+          ) : (
+            <div className="m-auto text-center select-none z-10">
+              <div className="w-16 h-16 rounded-2xl bg-accent-500/10 border border-accent-500/20 flex items-center justify-center text-accent-500 mx-auto mb-4 animate-float">
+                <Sparkles size={28} />
+              </div>
+              <h3 className="text-lg font-bold font-display">Awaiting classroom synchronization</h3>
+              <p className="text-xs text-slate-500 mt-1 max-w-xs leading-relaxed">
+                The AI teacher is setting up and will start the lecture shortly.
+              </p>
             </div>
           )}
+        </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-mono text-sm font-bold shadow-inner ${
-                timeLeft < 60 
-                  ? 'bg-error/20 text-error animate-pulse' 
-                  : 'bg-accent-50 border border-accent-100 text-accent-600'
+        {/* Right Column: Persistent Panel combining Participant Tiles and AI Student Doubt Chat */}
+        <div className="w-80 bg-slate-950 border-l border-slate-900/60 flex flex-col shrink-0 select-none">
+          
+          {/* Top Section: Class Participants List */}
+          <div className="p-4 border-b border-slate-900/60 flex flex-col min-h-0 flex-none bg-[#090A10]/40">
+            <div className="text-xs text-slate-500 font-bold uppercase tracking-wider font-mono border-b border-slate-900/80 pb-2 mb-3">
+              Class Participants ({3 + (preJoined ? 1 : 0)})
+            </div>
+            
+            {/* Grid of participant tiles */}
+            <div className="grid grid-cols-2 gap-2 overflow-y-auto max-h-[180px] pr-1 animate-fade-in">
+              
+              {/* 1. AI Teacher Tile */}
+              <div className={`aspect-video rounded-lg bg-slate-900 overflow-hidden relative border transition-all duration-300 flex flex-col items-center justify-center shadow ${
+                aiIsSpeaking ? 'border-accent-500 bg-slate-900/30' : 'border-slate-800'
               }`}>
-                <Clock size={14} />
-                <span>{formatTime(timeLeft)}</span>
+                <div className="relative w-8 h-8 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center overflow-hidden">
+                  <div className={`absolute inset-0 bg-gradient-to-br from-accent-600 to-cyber-purple transition-opacity ${
+                    aiIsSpeaking ? 'opacity-85' : 'opacity-20'
+                  }`} />
+                  <Sparkles size={14} className={`relative z-10 text-white ${aiIsSpeaking ? 'animate-pulse' : 'opacity-50'}`} />
+                </div>
+                {aiIsSpeaking && (
+                  <div className="flex gap-0.5 items-end justify-center h-2 mt-1">
+                    <div className="w-0.5 rounded bg-accent-500 h-1 animate-[bounce_0.6s_infinite_alternate]" style={{ animationDelay: '0.1s' }} />
+                    <div className="w-0.5 rounded bg-accent-500 h-2.5 animate-[bounce_0.6s_infinite_alternate]" style={{ animationDelay: '0.3s' }} />
+                    <div className="w-0.5 rounded bg-accent-500 h-2 animate-[bounce_0.6s_infinite_alternate]" style={{ animationDelay: '0.2s' }} />
+                  </div>
+                )}
+                <div className="absolute bottom-1 left-1.5 bg-slate-950/80 border border-slate-850 px-1 py-0.2 rounded text-[8px] font-semibold text-white tracking-wide">
+                  Professor AI (Host)
+                </div>
               </div>
+
+              {/* 2. User camera Tile */}
+              <div className="aspect-video rounded-lg bg-slate-900 border border-slate-800 overflow-hidden relative flex flex-col items-center justify-center shadow">
+                {cameraOn && localStream ? (
+                  <video
+                    ref={userVideoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    className="w-full h-full object-cover scale-x-[-1]"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-slate-950 border border-slate-800 flex items-center justify-center font-bold text-slate-500 text-xs select-none">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="absolute bottom-1 left-1.5 bg-slate-950/80 border border-slate-850 px-1 py-0.2 rounded text-[8px] font-semibold text-white tracking-wide truncate max-w-[65px]">
+                  {displayName} (You)
+                </div>
+                <div className={`absolute top-1 right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center text-white ${
+                  micOn ? 'bg-cyber-green/15 text-cyber-green' : 'bg-error/20 text-error'
+                }`}>
+                  {micOn ? <Mic size={7} /> : <MicOff size={7} />}
+                </div>
+              </div>
+
+              {/* 3. Mock Student 1: Priya */}
+              <div className="aspect-video rounded-lg bg-slate-900 border border-slate-800 overflow-hidden relative flex flex-col items-center justify-center shadow group">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-cyber-purple/20 to-cyber-pink/20 border border-slate-800 flex items-center justify-center font-bold text-cyber-pink text-xs select-none">
+                  PS
+                </div>
+                <div className="absolute bottom-1 left-1.5 bg-slate-950/80 border border-slate-850 px-1 py-0.2 rounded text-[8px] font-semibold text-white tracking-wide">
+                  Priya Sharma
+                </div>
+                <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center bg-cyber-green/15 text-cyber-green">
+                  <Mic size={7} />
+                </div>
+              </div>
+
+              {/* 4. Mock Student 2: Alex */}
+              <div className="aspect-video rounded-lg bg-slate-900 border border-slate-800 overflow-hidden relative flex flex-col items-center justify-center shadow">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-cyber-green/20 to-accent-500/20 border border-slate-800 flex items-center justify-center font-bold text-cyber-green text-xs select-none">
+                  AC
+                </div>
+                <div className="absolute bottom-1 left-1.5 bg-slate-950/80 border border-slate-850 px-1 py-0.2 rounded text-[8px] font-semibold text-white tracking-wide">
+                  Alex Chen
+                </div>
+                <div className="absolute top-1 right-1 w-3.5 h-3.5 rounded-full flex items-center justify-center bg-cyber-green/15 text-cyber-green">
+                  <Mic size={7} />
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          {/* Bottom Section: AI Student Doubt Chat Panel */}
+          <div className="flex-1 flex flex-col min-h-0 bg-[#0C0F19]">
+            {/* Header */}
+            <div className="p-3 border-b border-slate-900/60 bg-slate-950 flex items-center gap-2 select-none">
+              <MessageSquare size={14} className="text-accent-500" />
+              <span className="text-xs font-bold uppercase tracking-wider font-mono text-slate-300">Doubt Chat</span>
+              <span className="w-2 h-2 rounded-full bg-cyber-green animate-pulse ml-auto" />
+              <span className="text-[9px] text-slate-500 font-mono">AI Teacher Active</span>
             </div>
 
-            {studentInfo && (
-              <div className="flex items-center gap-2 border border-slate-200/80 bg-white/50 rounded-xl px-3 py-1.5 shadow-sm">
-                <button
-                  type="button"
-                  onClick={() => setIsMuted(prev => !prev)}
-                  className="text-slate-500 hover:text-slate-700 bg-transparent border-none cursor-pointer p-0 flex items-center justify-center outline-none"
-                  title={isMuted ? 'Unmute voice' : 'Mute voice'}
-                >
-                  {isMuted || volume === 0 ? (
-                    <VolumeX size={14} className="text-error" />
-                  ) : (
-                    <Volume2 size={14} className="text-accent-500" />
-                  )}
-                </button>
-                
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={isMuted ? 0 : volume}
-                  onChange={(e) => {
-                    const val = parseFloat(e.target.value);
-                    setVolume(val);
-                    if (isMuted && val > 0) {
-                      setIsMuted(false);
-                    }
-                  }}
-                  className="w-16 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-accent-500 outline-none"
-                  style={{ verticalAlign: 'middle' }}
-                />
-                
-                <span className="text-[10px] font-mono font-bold text-slate-500 w-8 text-right select-none">
-                  {isMuted ? 'Muted' : `${Math.round(volume * 100)}%`}
-                </span>
-              </div>
-            )}
+            {/* Chat message area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 flex flex-col">
+              {chatMessages.map((msg, idx) => {
+                return (
+                  <div
+                    key={idx}
+                    className={`flex flex-col text-left max-w-[85%] ${
+                      msg.isSelf ? 'self-end items-end' : 'self-start items-start'
+                    }`}
+                  >
+                    <span className="text-[9px] text-slate-500 font-bold mb-1 font-mono uppercase tracking-wider">
+                      {msg.sender} • {msg.time}
+                    </span>
+                    <div
+                      className={`rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed font-sans shadow-md ${
+                        msg.isSelf
+                          ? 'bg-blue-600 text-white rounded-tr-none'
+                          : 'bg-white text-slate-900 rounded-tl-none border border-slate-100'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
 
-            {!studentInfo && (
+            {/* WhatsApp-style Input box */}
+            <form onSubmit={handleSendChat} className="p-3 border-t border-slate-900/80 bg-slate-950 flex gap-2 select-none">
+              <input
+                ref={chatInputRef}
+                type="text"
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                placeholder="Ask a doubt..."
+                disabled={isAnsweringQuestion}
+                className="flex-1 text-xs py-2.5 px-3.5 rounded-xl border border-slate-800 bg-slate-900 placeholder:text-slate-500 text-slate-200 outline-none focus:border-blue-600 disabled:opacity-50 transition-all font-sans"
+              />
               <button
-                type="button"
-                onClick={handleTopicComplete}
-                disabled={loading || topicComplete}
-                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-650 border border-slate-250 hover:bg-slate-200 hover:text-slate-800 transition-all duration-200 disabled:opacity-40 cursor-pointer flex items-center gap-1"
+                type="submit"
+                disabled={isAnsweringQuestion}
+                className="p-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 border-none cursor-pointer flex items-center justify-center shrink-0 disabled:opacity-50 transition-all shadow shadow-blue-600/20"
               >
-                Complete Lecture
-                <ChevronRight size={13} />
+                <Send size={15} />
               </button>
-            )}
+            </form>
+
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* Bottom Meeting Toolbar controls */}
+      <div className="h-20 bg-slate-950/95 border-t border-slate-900/65 backdrop-blur-md px-6 flex items-center justify-between shrink-0 select-none relative z-30">
+        
+        {/* Left Toolbar: Narration Controls */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setIsMuted(prev => !prev)}
+            className={`p-2.5 rounded-xl border-none cursor-pointer transition-all ${
+              isMuted ? 'bg-error/15 text-error' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'
+            }`}
+            title={isMuted ? "Unmute Lecture Voice" : "Mute Lecture Voice"}
+          >
+            {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          </button>
+          
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider font-mono">Volume</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              value={volume}
+              onChange={(e) => setVolume(parseFloat(e.target.value))}
+              disabled={isMuted}
+              className="w-20 accent-accent-500 h-1 rounded-full cursor-pointer bg-slate-800 border-none outline-none disabled:opacity-40"
+            />
           </div>
         </div>
+
+        {/* Center Toolbar: Webcam / Audio Controls */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setMicOn(prev => !prev)}
+            className={`flex flex-col items-center gap-1 py-1 px-3.5 rounded-xl transition-all border-none cursor-pointer ${
+              micOn 
+                ? 'bg-slate-900 text-slate-300 hover:bg-slate-850' 
+                : 'bg-error text-white hover:bg-error/95 shadow-md shadow-error/15'
+            }`}
+          >
+            {micOn ? <Mic size={16} /> : <MicOff size={16} />}
+            <span className="text-[9px] font-semibold uppercase font-mono tracking-wider">Mute</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setCameraOn(prev => !prev)}
+            className={`flex flex-col items-center gap-1 py-1 px-3.5 rounded-xl transition-all border-none cursor-pointer ${
+              cameraOn 
+                ? 'bg-slate-900 text-slate-300 hover:bg-slate-850' 
+                : 'bg-error text-white hover:bg-error/95 shadow-md shadow-error/15'
+            }`}
+          >
+            {cameraOn ? <Video size={16} /> : <VideoOff size={16} />}
+            <span className="text-[9px] font-semibold uppercase font-mono tracking-wider">Video</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLeaveClass}
+            className="flex flex-col items-center gap-1 py-1.5 px-4.5 rounded-xl bg-error/90 hover:bg-error text-white border-none cursor-pointer hover:shadow-lg hover:shadow-error/15 active:scale-95 transition-all"
+          >
+            <PhoneOff size={16} />
+            <span className="text-[9px] font-bold uppercase font-mono tracking-wider">Leave</span>
+          </button>
+        </div>
+
+        {/* Right Toolbar: Drawer Toggles */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              const pGrid = document.querySelector('.grid-cols-2');
+              pGrid?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }}
+            className="flex flex-col items-center gap-1 py-1 px-3.5 rounded-xl border-none cursor-pointer bg-slate-900 text-slate-300 hover:bg-slate-850 transition-all"
+          >
+            <Users size={16} />
+            <span className="text-[9px] font-semibold uppercase font-mono tracking-wider">People</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              chatInputRef.current?.focus();
+            }}
+            className="flex flex-col items-center gap-1 py-1 px-3.5 rounded-xl border-none cursor-pointer bg-slate-900 text-slate-300 hover:bg-slate-850 transition-all"
+          >
+            <MessageSquare size={16} />
+            <span className="text-[9px] font-semibold uppercase font-mono tracking-wider">Chat</span>
+          </button>
+        </div>
+
       </div>
+
     </div>
   );
 }

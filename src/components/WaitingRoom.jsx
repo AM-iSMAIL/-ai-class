@@ -8,6 +8,7 @@ import {
   Rocket,
   Timer,
   Shield,
+  Volume2,
 } from 'lucide-react';
 import { db } from '../firebase';
 import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
@@ -353,7 +354,8 @@ export default function WaitingRoom({ onNext, classData, studentInfo, onSessionL
                 }}
                 className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-accent-500/10 hover:bg-accent-500/20 text-accent-600 border-none cursor-pointer flex items-center gap-1.5 transition-all duration-200"
               >
-                🔊 Test Voice
+                <Volume2 size={13} />
+                <span>Test Voice</span>
               </button>
             </div>
           </div>

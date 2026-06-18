@@ -235,7 +235,7 @@ export default function StudentJoin({
                 {rejoinError && (
                   <div className="flex flex-col gap-2.5 text-error text-sm bg-error/10 px-4 py-3 rounded-lg border border-error/20 mt-4 text-left">
                     <div className="flex items-start gap-2">
-                      <span className="shrink-0 mt-0.5">⚠</span>
+                      <AlertTriangle size={15} className="shrink-0 mt-0.5" />
                       <span className="leading-relaxed">{rejoinError}</span>
                     </div>
                     {rejoinError.includes("Permission denied") && (
@@ -376,7 +376,7 @@ export default function StudentJoin({
             {error && (
               <div className="flex flex-col gap-2.5 text-error text-sm bg-error/10 px-4 py-3 rounded-lg border border-error/20 text-left">
                 <div className="flex items-start gap-2">
-                  <span className="shrink-0 mt-0.5">⚠</span>
+                  <AlertTriangle size={15} className="shrink-0 mt-0.5" />
                   <span className="leading-relaxed">{error}</span>
                 </div>
                 {error.includes("Permission denied") && (

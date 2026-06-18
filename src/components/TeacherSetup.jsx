@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Send,
   X,
+  AlertTriangle,
 } from 'lucide-react';
 import { db, toggleForceLocalMode, runWithTimeout } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
@@ -459,7 +460,7 @@ export default function TeacherSetup({ onNext, onClassData }) {
             {error && (
               <div className="flex flex-col gap-3 text-error text-sm bg-error/10 px-4 py-3.5 rounded-lg border border-error/20 text-left">
                 <div className="flex items-start gap-2">
-                  <span className="shrink-0 mt-0.5 text-base">⚠</span>
+                  <AlertTriangle size={15} className="shrink-0 mt-0.5" />
                   <span className="leading-relaxed">{error}</span>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-1">

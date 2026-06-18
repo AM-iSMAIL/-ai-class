@@ -1,15 +1,16 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, lazy, Suspense } from 'react';
 import Navbar from './components/Navbar';
-import Home from './components/Home';
-import TeacherSetup from './components/TeacherSetup';
-import StudentJoin from './components/StudentJoin';
-import WaitingRoom from './components/WaitingRoom';
-import Classroom from './components/Classroom';
-import Quiz from './components/Quiz';
-import Results from './components/Results';
 import { Flame } from 'lucide-react';
 import { auth, signInWithGoogle, signOutUser, db } from './firebase';
 import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+
+const Home = lazy(() => import('./components/Home'));
+const TeacherSetup = lazy(() => import('./components/TeacherSetup'));
+const StudentJoin = lazy(() => import('./components/StudentJoin'));
+const WaitingRoom = lazy(() => import('./components/WaitingRoom'));
+const Classroom = lazy(() => import('./components/Classroom'));
+const Quiz = lazy(() => import('./components/Quiz'));
+const Results = lazy(() => import('./components/Results'));
 
 const INITIAL_TOKENS = [
   {
@@ -27,6 +28,13 @@ const INITIAL_TOKENS = [
     scores: [null, null, null, null, null, null]
   }
 ];
+
+const ScreenLoader = () => (
+  <div className="flex-1 flex flex-col items-center justify-center p-8 relative min-h-[50vh]">
+    <div className="w-10 h-10 rounded-full border-4 border-slate-200 border-t-accent-500 animate-spin mb-4" />
+    <p className="text-slate-500 text-sm font-medium animate-pulse font-display">Loading section...</p>
+  </div>
+);
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState(() => {
@@ -155,7 +163,7 @@ function App() {
     };
   }, [db, classData, studentInfo, currentScreen, currentTopicIndex]);
 
-  const handleLogin = async () => {
+  const handleLogin = useCallback(async () => {
     // Instant login bypass to prevent Firebase Key issues from blocking development
     const mockUser = {
       displayName: "Jane Doe (Teacher)",
@@ -165,9 +173,9 @@ function App() {
     };
     setUser(mockUser);
     setCurrentScreen('teacher-setup');
-  };
+  }, []);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     try {
       await signOutUser();
       setUser(null);
@@ -175,11 +183,9 @@ function App() {
     } catch (err) {
       console.error("Firebase Signout failed:", err);
     }
-  };
+  }, []);
 
-
-
-  const navigate = (screen) => setCurrentScreen(screen);
+  const navigate = useCallback((screen) => setCurrentScreen(screen), []);
 
   const handleTopicExplanationReady = useCallback((topicIndex, paragraphs) => {
     setTopicExplanations((prev) => ({
@@ -188,7 +194,7 @@ function App() {
     }));
   }, []);
 
-  const handleStudentJoin = (info, fetchedClassData = null) => {
+  const handleStudentJoin = useCallback((info, fetchedClassData = null) => {
     if (fetchedClassData) {
       setClassData(fetchedClassData);
     }
@@ -207,9 +213,9 @@ function App() {
       }
       return [...prev, enrichedInfo];
     });
-  };
+  }, []);
 
-  const handleRejoin = (studentId) => {
+  const handleRejoin = useCallback((studentId) => {
     const found = sessionTokens.find((t) => t.studentId === studentId);
     if (found) {
       setStudentInfo(found);
@@ -217,24 +223,24 @@ function App() {
       return true;
     }
     return false;
-  };
+  }, [sessionTokens]);
 
-  const handleSaveApiKey = (newKey) => {
+  const handleSaveApiKey = useCallback((newKey) => {
     setApiKey(newKey);
     localStorage.setItem('classai_gemini_api_key', newKey);
-  };
+  }, []);
 
-  const handleSaveUnsplashClientId = (newId) => {
+  const handleSaveUnsplashClientId = useCallback((newId) => {
     setUnsplashClientId(newId);
     localStorage.setItem('classai_unsplash_client_id', newId);
-  };
+  }, []);
 
-  const handleSaveElevenLabsApiKey = (newKey) => {
+  const handleSaveElevenLabsApiKey = useCallback((newKey) => {
     setElevenLabsApiKey(newKey);
     localStorage.setItem('classai_elevenlabs_api_key', newKey);
-  };
+  }, []);
 
-  const handleQuizResults = (results) => {
+  const handleQuizResults = useCallback((results) => {
     const isStrike = results.score === 0;
     const newStrikeVal = isStrike ? strikeCount + 1 : strikeCount;
 
@@ -312,9 +318,9 @@ function App() {
       total: prev.total + results.total,
       answers: [...prev.answers, ...results.answers],
     }));
-  };
+  }, [strikeCount, currentTopicIndex, classData, studentInfo]);
 
-  const handleQuizNext = () => {
+  const handleQuizNext = useCallback(() => {
     const totalTopics = classData?.topics?.length || 6;
     if (currentTopicIndex < totalTopics - 1) {
       const nextTopic = currentTopicIndex + 1;
@@ -359,9 +365,9 @@ function App() {
         channel.close();
       }
     }
-  };
+  }, [classData, currentTopicIndex, studentInfo]);
 
-  const handleRestart = () => {
+  const handleRestart = useCallback(() => {
     setCurrentScreen('teacher-setup');
     setClassData(null);
     setStudentInfo(null);
@@ -375,7 +381,7 @@ function App() {
       answers: []
     });
     setTopicExplanations({});
-  };
+  }, []);
 
   const renderScreen = () => {
     switch (currentScreen) {
@@ -485,7 +491,9 @@ function App() {
         />
         <main className="flex-1 flex flex-col relative">
           <div key={currentScreen} className="flex-1 flex flex-col animate-fade-in">
-            {renderScreen()}
+            <Suspense fallback={<ScreenLoader />}>
+              {renderScreen()}
+            </Suspense>
           </div>
         </main>
       </div>
